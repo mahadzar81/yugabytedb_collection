@@ -1,0 +1,96 @@
+---
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_os_family | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - "default.yml"
+      paths:
+        - "{{ role_path }}/vars"
+
+- name: Set facts for cluster nodes
+  ansible.builtin.set_fact:
+    yugabytedb_master_nodes: "{{ groups['yugabytedb_masters'] | default(groups['yugabytedb_nodes'], true) }}"
+
+- name: Start YugabyteDB cluster
+  when: yugabytedb_action == "start"
+  block:
+    - name: Start YugabyteDB Masters
+      ansible.builtin.systemd:
+        name: yugabytedb-master
+        state: started
+        enabled: true
+        daemon_reload: true
+      when: inventory_hostname in yugabytedb_master_nodes
+
+    - name: Wait for masters to be ready
+      ansible.builtin.wait_for:
+        port: "{{ yugabytedb_master_ports | int }}"
+        timeout: 300
+        delay: 10
+      when: inventory_hostname in yugabytedb_master_nodes
+
+    - name: Start YugabyteDB Tservers
+      ansible.builtin.systemd:
+        name: yugabytedb-tserver
+        state: started
+        enabled: true
+      when: inventory_hostname in yugabytedb_tserver_nodes | default(yugabytedb_master_nodes, true)
+
+- name: Stop YugabyteDB cluster
+  when: yugabytedb_action == "stop"
+  block:
+    - name: Stop YugabyteDB Tservers
+      ansible.builtin.systemd:
+        name: yugabytedb-tserver
+        state: stopped
+      when: inventory_hostname in yugabytedb_tserver_nodes | default(yugabytedb_master_nodes, true)
+
+    - name: Stop YugabyteDB Masters
+      ansible.builtin.systemd:
+        name: yugabytedb-master
+        state: stopped
+      when: inventory_hostname in yugabytedb_master_nodes
+
+- name: Restart YugabyteDB cluster
+  when: yugabytedb_action == "restart"
+  block:
+    - name: Restart YugabyteDB Masters
+      ansible.builtin.systemd:
+        name: yugabytedb-master
+        state: restarted
+        daemon_reload: true
+      when: inventory_hostname in yugabytedb_master_nodes
+
+    - name: Wait for masters to be ready
+      ansible.builtin.wait_for:
+        port: "{{ yugabytedb_master_ports | int }}"
+        timeout: 300
+        delay: 10
+      when: inventory_hostname in yugabytedb_master_nodes
+
+    - name: Restart YugabyteDB Tservers
+      ansible.builtin.systemd:
+        name: yugabytedb-tserver
+        state: restarted
+      when: inventory_hostname in yugabytedb_tserver_nodes | default(yugabytedb_master_nodes, true)
+
+- name: Get cluster status
+  when: yugabytedb_action == "status" or yugabytedb_action is not defined
+  block:
+    - name: Check YugabyteDB status
+      ansible.builtin.shell: |
+        {{ yugabytedb_install_dir }}/current/bin/yugabyted status
+      register: cluster_status
+      changed_when: false
+      failed_when: false
+      become: true
+      become_user: "{{ yugabytedb_user }}"
+
+    - name: Display cluster status
+      ansible.builtin.debug:
+        var: cluster_status.stdout_lines
+      when: inventory_hostname == yugabytedb_master_nodes[0]

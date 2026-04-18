@@ -1,0 +1,3 @@
+---
+# Collection metadata for runtime requirements
+requires_ansible: ">=2.9.0"

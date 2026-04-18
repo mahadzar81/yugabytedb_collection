@@ -1,0 +1,17 @@
+---
+- name: Manage YugabyteDB Cluster Operations
+  hosts: yugabytedb_nodes
+  become: true
+  gather_facts: true
+
+  vars:
+    # Action to perform: start, stop, restart, status
+    yugabytedb_action: "status"
+    
+    yugabytedb_install_dir: "/opt/yugabyte"
+    yugabytedb_user: "yugabyte"
+    yugabytedb_group: "yugabyte"
+
+  roles:
+    - role: yugabytedb.yugabytedb.manage
+      tags: ['manage', 'yugabytedb']

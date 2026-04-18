@@ -1,0 +1,27 @@
+---
+# Example inventory for YugabyteDB cluster
+
+[yugabytedb_nodes]
+node1 ansible_host=192.168.1.10
+node2 ansible_host=192.168.1.11
+node3 ansible_host=192.168.1.12
+node4 ansible_host=192.168.1.13
+node5 ansible_host=192.168.1.14
+
+# Optional: Separate master and tserver nodes
+[yugabytedb_masters]
+node1
+node2
+node3
+
+[yugabytedb_tservers]
+node1
+node2
+node3
+node4
+node5
+
+[all:vars]
+ansible_user=ansible
+ansible_become=true
+ansible_python_interpreter=/usr/bin/python3

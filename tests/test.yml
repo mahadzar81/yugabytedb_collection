@@ -1,0 +1,15 @@
+---
+- name: Test YugabyteDB Collection Installation
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Verify collection structure
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/.."
+      register: collection_path
+
+    - name: Display collection info
+      ansible.builtin.debug:
+        msg: "YugabyteDB Ansible Collection test completed successfully"

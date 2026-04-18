@@ -1,0 +1,69 @@
+---
+- name: Deploy YugabyteDB Multi-Node Cluster
+  hosts: yugabytedb_nodes
+  become: true
+  gather_facts: true
+
+  vars:
+    # YugabyteDB version to install
+    yugabytedb_version: "2.40.2.0"
+    
+    # Installation directories
+    yugabytedb_data_dir: "/var/lib/yugabyte"
+    yugabytedb_log_dir: "/var/log/yugabyte"
+    yugabytedb_install_dir: "/opt/yugabyte"
+    
+    # Network configuration
+    yugabytedb_master_ports: "7100"
+    yugabytedb_tserver_ports: "9100"
+    
+    # Cluster configuration
+    yugabytedb_replication_factor: 3
+    yugabytedb_enable_ysql: true
+    yugabytedb_enable_ycql: true
+    
+    # System tuning
+    yugabytedb_disable_thp: true
+    yugabytedb_set_ulimits: true
+
+  pre_tasks:
+    - name: Verify minimum requirements
+      ansible.builtin.assert:
+        that:
+          - ansible_memtotal_mb >= 4096
+          - ansible_processor_vcpus >= 2
+        fail_msg: "YugabyteDB requires minimum 4GB RAM and 2 vCPUs"
+        success_msg: "System meets minimum requirements"
+
+  roles:
+    - role: yugabytedb.yugabytedb.install
+      tags: ['install', 'yugabytedb']
+    
+    - role: yugabytedb.yugabytedb.configure
+      tags: ['configure', 'yugabytedb']
+
+  post_tasks:
+    - name: Wait for cluster to be fully operational
+      ansible.builtin.shell: |
+        {{ yugabytedb_install_dir }}/current/bin/yugabyted status
+      register: cluster_status
+      retries: 30
+      delay: 10
+      until: "'Running' in cluster_status.stdout"
+      changed_when: false
+      when: inventory_hostname == groups['yugabytedb_nodes'][0]
+
+    - name: Display cluster information
+      ansible.builtin.debug:
+        msg: |
+          YugabyteDB Cluster Deployment Complete!
+          
+          Master UI: http://{{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:7000
+          TServer UI: http://{{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:9000
+          YSQL Port: 5433
+          YCQL Port: 9042
+          
+          Connection examples:
+          - YSQL: ysqlsh -h {{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}
+          - YCQL: cqlsh {{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }} 9042
+      when: inventory_hostname == groups['yugabytedb_nodes'][0]

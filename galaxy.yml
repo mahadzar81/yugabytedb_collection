@@ -1,0 +1,20 @@
+---
+namespace: yugabytedb
+name: yugabytedb
+version: 1.0.0
+readme: README.md
+authors:
+  - Your Name <your.email@example.com>
+description: Ansible collection for installing and managing YugabyteDB multi-node clusters
+license_file: LICENSE
+tags:
+  - database
+  - yugabytedb
+  - distributed
+  - postgresql
+  - sql
+dependencies: {}
+build_ignore:
+  - '*.tar.gz'
+  - '*.log'
+  - '.gitignore'
