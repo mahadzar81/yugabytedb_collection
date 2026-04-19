@@ -1,6 +1,6 @@
 ---
 # Molecule configuration for YugabyteDB Ansible Collection
-# Default scenario - uses delegated driver for testing on remote hosts
+# Consolidated multi-scenario configuration for multiple OS platforms
 
 dependency:
   name: galaxy
@@ -21,7 +21,14 @@ driver:
 
 platforms:
   - name: default
-    # Platform identifier for documentation
+  - name: debian11
+  - name: debian12
+  - name: debian13
+  - name: rhel8
+  - name: rhel9
+  - name: rhel10
+  - name: ubuntu2204
+  - name: ubuntu2404
 
 provisioner:
   name: ansible
@@ -36,6 +43,54 @@ provisioner:
             ansible_host: localhost
             ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
+          debian11:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: debian
+            target_os_version: "11"
+          debian12:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: debian
+            target_os_version: "12"
+          debian13:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: debian
+            target_os_version: "13"
+          rhel8:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: rhel
+            target_os_version: "8"
+          rhel9:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: rhel
+            target_os_version: "9"
+          rhel10:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: rhel
+            target_os_version: "10"
+          ubuntu2204:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: ubuntu
+            target_os_version: "22.04"
+          ubuntu2404:
+            ansible_host: localhost
+            ansible_user: root
+            ansible_python_interpreter: /usr/bin/python3
+            target_os: ubuntu
+            target_os_version: "24.04"
 
 scenario:
   name: default

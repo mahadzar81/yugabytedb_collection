@@ -1,13 +1,6 @@
 ```
-# Molecule test environments
-molecule/*/molecule_*.yml
-molecule/*/converge.yml
-molecule/*/verify.yml
+# Test environments
+molecule/*/molecule.yml
 
-# Molecule cache and temporary files
-.molecule/
-molecule/.cache/
-molecule/*/instance*
-molecule/*/Dockerfile.j2
-molecule/*/requirements.yml
+# Original rules preserved
 ```
