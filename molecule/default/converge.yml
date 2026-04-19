@@ -3,8 +3,16 @@
 # Molecule calls this playbook with `molecule converge`.
 - name: Converge
   hosts: all
-  gather_facts: true # Disable if your role does not rely on facts
+  gather_facts: true
   tasks:
-    - name: Apply role under test
+    - name: Apply install role
       ansible.builtin.include_role:
-        name: yournamespace.yourcollection.yourrole
+        name: yugabytedb.yugabytedb.install
+
+    - name: Apply configure role
+      ansible.builtin.include_role:
+        name: yugabytedb.yugabytedb.configure
+
+    - name: Apply manage role
+      ansible.builtin.include_role:
+        name: yugabytedb.yugabytedb.manage

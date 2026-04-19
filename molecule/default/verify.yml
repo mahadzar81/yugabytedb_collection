@@ -2,9 +2,20 @@
 # Purpose: assert that the instance really ended up in the expected state.
 # Molecule calls this playbook with `molecule verify`.
 - name: Verify
-  hosts: instance
-  gather_facts: false # Quicker, if you do not need facts
+  hosts: all
+  gather_facts: true
   tasks:
-    - name: Assert something
+    - name: Verify YugabyteDB installation
       ansible.builtin.assert:
-        that: true
+        that:
+          - ansible_os_family is defined
+        fail_msg: "Failed to gather system facts"
+        success_msg: "System facts gathered successfully for {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Verify target OS variables
+      ansible.builtin.assert:
+        that:
+          - target_os is defined
+          - target_os_version is defined
+        fail_msg: "Target OS variables not defined"
+        success_msg: "Testing on {{ target_os }} {{ target_os_version }}"
