@@ -1,15 +1,5 @@
 ---
-# Molecule configuration for YugabyteDB Ansible Collection
-# Default scenario - uses delegated driver for testing on remote hosts
-
-dependency:
-  name: galaxy
-  options:
-    ignore-certs: false
-    ignore-errors: false
-    role-file: requirements.yml
-    requirements-file: requirements.yml
-
+# Molecule configuration for Ubuntu 22.04 (Jammy Jellyfish)
 driver:
   name: delegated
   options:
@@ -20,25 +10,28 @@ driver:
       ansible_python_interpreter: /usr/bin/python3
 
 platforms:
-  - name: default
+  - name: ubuntu2204
     # Platform identifier for documentation
 
 provisioner:
   name: ansible
   playbooks:
-    converge: converge.yml
-    verify: verify.yml
+    prepare: ../default/prepare.yml
+    converge: ../default/converge.yml
+    verify: ../default/verify.yml
   inventory:
     hosts:
       all:
         hosts:
-          default:
+          ubuntu2204:
             ansible_host: localhost
             ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
+            target_os: ubuntu
+            target_os_version: "22.04"
 
 scenario:
-  name: default
+  name: ubuntu2204
   test_sequence:
     - dependency
     - cleanup

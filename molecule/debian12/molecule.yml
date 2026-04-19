@@ -1,15 +1,5 @@
 ---
-# Molecule configuration for YugabyteDB Ansible Collection
-# Default scenario - uses delegated driver for testing on remote hosts
-
-dependency:
-  name: galaxy
-  options:
-    ignore-certs: false
-    ignore-errors: false
-    role-file: requirements.yml
-    requirements-file: requirements.yml
-
+# Molecule configuration for Debian 12 (Bookworm)
 driver:
   name: delegated
   options:
@@ -20,25 +10,28 @@ driver:
       ansible_python_interpreter: /usr/bin/python3
 
 platforms:
-  - name: default
+  - name: debian12
     # Platform identifier for documentation
 
 provisioner:
   name: ansible
   playbooks:
-    converge: converge.yml
-    verify: verify.yml
+    prepare: ../default/prepare.yml
+    converge: ../default/converge.yml
+    verify: ../default/verify.yml
   inventory:
     hosts:
       all:
         hosts:
-          default:
+          debian12:
             ansible_host: localhost
             ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
+            target_os: debian
+            target_os_version: "12"
 
 scenario:
-  name: default
+  name: debian12
   test_sequence:
     - dependency
     - cleanup
