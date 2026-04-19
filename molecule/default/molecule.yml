@@ -11,24 +11,27 @@ dependency:
     requirements-file: requirements.yml
 
 driver:
-  name: delegated
-  options:
-    managed: false
-    ansible_connection_options:
-      ansible_connection: ssh
-      ansible_ssh_user: root
-      ansible_python_interpreter: /usr/bin/python3
+  name: docker
 
 platforms:
   - name: default
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
   - name: debian11
+    image: geerlingguy/docker-debian11-ansible:latest
   - name: debian12
+    image: geerlingguy/docker-debian12-ansible:latest
   - name: debian13
+    image: geerlingguy/docker-debian13-ansible:latest
   - name: rhel8
+    image: geerlingguy/docker-rockylinux8-ansible:latest
   - name: rhel9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
   - name: rhel10
+    image: geerlingguy/docker-rockylinux10-ansible:latest
   - name: ubuntu2204
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
   - name: ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
 
 provisioner:
   name: ansible
