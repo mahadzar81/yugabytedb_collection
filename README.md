@@ -51,19 +51,25 @@ ansible-galaxy collection list | grep yugabytedb
 
 ## 🏗️ Architecture
 
-This collection provides three specialized roles:
+This collection provides a single consolidated role:
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    INSTALL      │────▶│   CONFIGURE     │────▶│     MANAGE      │
-│                 │     │                 │     │                 │
-│ • OS Validation │     │ • Config Files  │     │ • Start/Stop    │
-│ • Prerequisites │     │ • Systemd Units │     │ • Restart       │
-│ • Download DB   │     │ • Firewall      │     │ • Status Check  │
-│ • Extract       │     │ • Cluster Init  │     │                 │
-│ • System Tuning │     │ • Bootstrap     │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      YUGABYTEDB ROLE                            │
+│                                                                 │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐        │
+│  │   INSTALL    │──▶│   CONFIGURE  │──▶│    MANAGE    │        │
+│  │              │   │              │   │              │        │
+│  │ • Validate   │   │ • Config     │   │ • Start/Stop │        │
+│  │ • Download   │   │ • Systemd    │   │ • Restart    │        │
+│  │ • Extract    │   │ • Firewall   │   │ • Status     │        │
+│  │ • User/Group │   │ • Bootstrap  │   │              │        │
+│  │ • THP/Tuning │   │ • Cluster    │   │              │        │
+│  └──────────────┘   └──────────────┘   └──────────────┘        │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+The `yugabytedb` role combines installation, configuration, and management into a single entry point. Use the `yugabytedb_action` variable to control lifecycle operations (start, stop, restart, status).
 
 ## 🚀 Quick Start
 
@@ -116,70 +122,44 @@ ycqlsh tserver1 9042
 
 ## 📖 Roles Reference
 
-### `yugabytedb.install`
+### `yugabytedb.yugabytedb`
 
-Installs YugabyteDB binaries and performs system preparation.
+Consolidated role for installing, configuring, and managing YugabyteDB clusters.
 
 **Key Tasks:**
-- Validates OS compatibility
-- Installs prerequisites (libedit, numactl, etc.)
-- Downloads and extracts YugabyteDB
+- Validates OS compatibility (RHEL 8/9/10, Debian 11/12/13, Ubuntu 22.04/24.04)
+- Installs prerequisites (libedit, numactl, sysstat, etc.)
+- Downloads and extracts YugabyteDB binaries
 - Creates `yugabyte` user and groups
 - Configures ulimits and kernel parameters
 - Disables Transparent Huge Pages (THP)
-- Sets up directory structure
-
-**Example:**
-```yaml
-- hosts: yugabytedb_nodes
-  become: true
-  roles:
-    - yugabytedb.yugabytedb.install
-```
-
-### `yugabytedb.configure`
-
-Configures cluster settings and initializes the database.
-
-**Key Tasks:**
 - Generates gflags configuration files
 - Creates systemd service units
-- Configures firewall rules
-- Bootstraps master nodes
-- Joins tserver nodes to cluster
-- Enables services on boot
+- Configures firewall rules (firewalld/ufw)
+- Bootstraps master nodes and joins tservers
+- Supports lifecycle management (start, stop, restart, status)
 
-**Example:**
+**Example - Deploy Cluster:**
 ```yaml
 - hosts: yugabytedb_nodes
   become: true
   vars:
+    yugabytedb_version: "2.40.2.0"
+    yugabytedb_replication_factor: 3
     yugabytedb_master_nodes: "{{ groups['masters'] }}"
     yugabytedb_tserver_nodes: "{{ groups['tservers'] }}"
   roles:
-    - yugabytedb.yugabytedb.configure
+    - yugabytedb.yugabytedb
 ```
 
-### `yugabytedb.manage`
-
-Manages cluster lifecycle operations.
-
-**Supported Actions:**
-- `start` - Start all services
-- `stop` - Stop all services
-- `restart` - Restart all services
-- `status` - Check service status
-- `enable` - Enable on boot
-- `disable` - Disable on boot
-
-**Example:**
+**Example - Manage Cluster:**
 ```yaml
 - hosts: yugabytedb_nodes
   become: true
   vars:
-    yugabytedb_action: restart
+    yugabytedb_action: restart  # start, stop, restart, or status
   roles:
-    - yugabytedb.yugabytedb.manage
+    - yugabytedb.yugabytedb
 ```
 
 ## ⚙️ Variables Reference
@@ -239,26 +219,20 @@ yugabytedb_collection/
 ├── meta/
 │   └── runtime.yml               # Runtime requirements
 ├── roles/
-│   ├── install/
-│   │   ├── tasks/
-│   │   │   └── main.yml          # Installation tasks
-│   │   └── defaults/
-│   │       └── main.yml          # Default variables
-│   ├── configure/
-│   │   ├── tasks/
-│   │   │   └── main.yml          # Configuration tasks
-│   │   ├── templates/
-│   │   │   ├── yugabyte-master.service.j2
-│   │   │   ├── yugabyte-tserver.service.j2
-│   │   │   ├── master_gflags.conf.j2
-│   │   │   └── tserver_gflags.conf.j2
-│   │   └── defaults/
-│   │       └── main.yml          # Default variables
-│   └── manage/
+│   └── yugabytedb/
 │       ├── tasks/
-│       │   └── main.yml          # Management tasks
-│       └── defaults/
-│           └── main.yml          # Default variables
+│       │   └── main.yml          # Combined install, configure, manage tasks
+│       ├── defaults/
+│       │   └── main.yml          # Default variables
+│       ├── handlers/
+│       │   └── main.yml          # Handlers for service restarts
+│       ├── templates/
+│       │   ├── master_gflags.conf.j2
+│       │   ├── tserver_gflags.conf.j2
+│       │   ├── yugabytedb-master.service.j2
+│       │   └── yugabytedb-tserver.service.j2
+│       └── meta/
+│           └── main.yml          # Role metadata
 ├── playbooks/
 │   ├── deploy_cluster.yml        # Full deployment playbook
 │   ├── manage_cluster.yml        # Management playbook

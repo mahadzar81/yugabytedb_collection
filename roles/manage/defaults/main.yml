@@ -1,5 +1,0 @@
----
-# Default variables for manage role
-
-yugabytedb_action: "status"
-yugabytedb_wait_timeout: 300
