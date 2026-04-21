@@ -1,0 +1,30 @@
+---
+# Default variables for configure role
+yugabytedb_disable_thp: true
+yugabytedb_set_ulimits: true
+yugabytedb_replication_factor: 3
+yugabytedb_enable_ysql: true
+yugabytedb_enable_ycql: true
+
+# Sysctl parameters for YugabyteDB
+yugabytedb_sysctl_params:
+  - name: vm.swappiness
+    value: "1"
+  - name: vm.overcommit_memory
+    value: "1"
+  - name: net.core.somaxconn
+    value: "65535"
+  - name: net.ipv4.tcp_max_syn_backlog
+    value: "8192"
+  - name: net.ipv4.ip_local_port_range
+    value: "1024 65535"
+  - name: net.ipv4.tcp_tw_reuse
+    value: "1"
+
+# Ports
+yugabytedb_master_ports: "7100"
+yugabytedb_tserver_ports: "9100"
+yugabytedb_ysql_port: "5433"
+yugabytedb_ycql_port: "9042"
+yugabytedb_yedis_port: "6379"
+yugabytedb_redis_port: "6379"

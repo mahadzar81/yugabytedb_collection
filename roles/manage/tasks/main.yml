@@ -1,0 +1,94 @@
+---
+# Manage YugabyteDB cluster operations
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - default.yml
+      paths:
+        - vars
+  tags: ['always']
+
+- name: Start YugabyteDB cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted start --background=false
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "start"
+  register: start_result
+  changed_when: "'Starting' in start_result.stdout or 'started' in start_result.stdout | lower"
+  tags: ['manage', 'yugabytedb', 'start']
+
+- name: Stop YugabyteDB cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted stop
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "stop"
+  register: stop_result
+  changed_when: "'Stopping' in stop_result.stdout or 'stopped' in stop_result.stdout | lower"
+  tags: ['manage', 'yugabytedb', 'stop']
+
+- name: Restart YugabyteDB cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted restart --background=false
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "restart"
+  register: restart_result
+  changed_when: "'Restarting' in restart_result.stdout or 'restarted' in restart_result.stdout | lower"
+  tags: ['manage', 'yugabytedb', 'restart']
+
+- name: Get YugabyteDB cluster status
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted status
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "status"
+  register: status_result
+  changed_when: false
+  tags: ['manage', 'yugabytedb', 'status']
+
+- name: Display cluster status
+  ansible.builtin.debug:
+    var: status_result.stdout_lines
+  when: yugabytedb_action == "status"
+  tags: ['manage', 'yugabytedb', 'status']
+
+- name: Add node to existing cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted start \
+      --background=false \
+      --join={{ master_node_address }}
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "add_node"
+  register: add_node_result
+  changed_when: "'Adding' in add_node_result.stdout or 'added' in add_node_result.stdout | lower"
+  tags: ['manage', 'yugabytedb', 'add_node']
+
+- name: Remove node from cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted stop
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: yugabytedb_action == "remove_node"
+  register: remove_node_result
+  changed_when: "'Stopping' in remove_node_result.stdout or 'stopped' in remove_node_result.stdout | lower"
+  tags: ['manage', 'yugabytedb', 'remove_node']
+
+- name: Wait for cluster to be ready after operation
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted status
+  register: wait_status
+  retries: 30
+  delay: 10
+  until: "'Running' in wait_status.stdout"
+  changed_when: false
+  when: 
+    - yugabytedb_action in ['start', 'restart', 'add_node']
+    - inventory_hostname == groups['yugabytedb_nodes'][0]
+  tags: ['manage', 'yugabytedb']

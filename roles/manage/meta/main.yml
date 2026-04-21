@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  role_name: manage
+  author: YugabyteDB Team
+  description: Manage YugabyteDB cluster operations (start, stop, restart, status)
+  license: Apache-2.0
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - database
+    - yugabytedb
+    - manage
+
+dependencies: []

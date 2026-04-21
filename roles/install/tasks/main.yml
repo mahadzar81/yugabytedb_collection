@@ -1,0 +1,113 @@
+---
+# Install YugabyteDB
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - default.yml
+      paths:
+        - vars
+  tags: ['always']
+
+- name: Create yugabyte group
+  ansible.builtin.group:
+    name: "{{ yugabytedb_group }}"
+    state: present
+    system: true
+  tags: ['install', 'yugabytedb']
+
+- name: Create yugabyte user
+  ansible.builtin.user:
+    name: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    system: true
+    create_home: false
+    shell: /sbin/nologin
+    comment: "YugabyteDB service user"
+  tags: ['install', 'yugabytedb']
+
+- name: Create installation directory
+  ansible.builtin.file:
+    path: "{{ yugabytedb_install_dir }}"
+    state: directory
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    mode: '0755'
+  tags: ['install', 'yugabytedb']
+
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ yugabytedb_data_dir }}"
+    state: directory
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    mode: '0755'
+  tags: ['install', 'yugabytedb']
+
+- name: Create log directory
+  ansible.builtin.file:
+    path: "{{ yugabytedb_log_dir }}"
+    state: directory
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    mode: '0755'
+  tags: ['install', 'yugabytedb']
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ yugabytedb_required_packages }}"
+    state: present
+  become: true
+  tags: ['install', 'yugabytedb']
+
+- name: Download YugabyteDB binary
+  ansible.builtin.get_url:
+    url: "{{ yugabytedb_download_url }}"
+    dest: "/tmp/yugabyte-{{ yugabytedb_version }}-linux-x86_64.tar.gz"
+    mode: '0644'
+  tags: ['install', 'yugabytedb']
+
+- name: Extract YugabyteDB archive
+  ansible.builtin.unarchive:
+    src: "/tmp/yugabyte-{{ yugabytedb_version }}-linux-x86_64.tar.gz"
+    dest: "{{ yugabytedb_install_dir }}"
+    remote_src: true
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+  tags: ['install', 'yugabytedb']
+
+- name: Create current symlink
+  ansible.builtin.file:
+    src: "{{ yugabytedb_install_dir }}/yugabyte-{{ yugabytedb_version }}"
+    dest: "{{ yugabytedb_install_dir }}/current"
+    state: link
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+  tags: ['install', 'yugabytedb']
+
+- name: Set proper permissions on YugabyteDB binaries
+  ansible.builtin.file:
+    path: "{{ yugabytedb_install_dir }}/current/bin"
+    mode: '0755'
+    state: directory
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    recurse: true
+  tags: ['install', 'yugabytedb']
+
+- name: Add YugabyteDB to PATH
+  ansible.builtin.copy:
+    dest: /etc/profile.d/yugabytedb.sh
+    content: |
+      export PATH="{{ yugabytedb_install_dir }}/current/bin:$PATH"
+    mode: '0644'
+  tags: ['install', 'yugabytedb']
+
+- name: Clean up downloaded archive
+  ansible.builtin.file:
+    path: "/tmp/yugabyte-{{ yugabytedb_version }}-linux-x86_64.tar.gz"
+    state: absent
+  tags: ['install', 'yugabytedb']

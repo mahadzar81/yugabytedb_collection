@@ -1,0 +1,9 @@
+---
+# Default variables for manage role
+yugabytedb_action: "status"
+yugabytedb_user: "yugabyte"
+yugabytedb_group: "yugabyte"
+yugabytedb_install_dir: "/opt/yugabyte"
+
+# Master node address for adding nodes to cluster
+master_node_address: ""

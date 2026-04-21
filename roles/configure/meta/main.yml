@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  role_name: configure
+  author: YugabyteDB Team
+  description: Configure YugabyteDB cluster settings and system tuning
+  license: Apache-2.0
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - database
+    - yugabytedb
+    - configure
+
+dependencies:
+  - role: install
