@@ -1,0 +1,19 @@
+---
+# Default variables for install role
+yugabytedb_version: "2.40.2.0"
+yugabytedb_user: "yugabyte"
+yugabytedb_group: "yugabyte"
+yugabytedb_install_dir: "/opt/yugabyte"
+yugabytedb_data_dir: "/var/lib/yugabyte"
+yugabytedb_log_dir: "/var/log/yugabyte"
+
+# Download URL for YugabyteDB
+yugabytedb_download_url: "https://downloads.yugabyte.com/releases/{{ yugabytedb_version }}/yugabyte-{{ yugabytedb_version }}-linux-x86_64.tar.gz"
+
+# Required packages based on OS family
+yugabytedb_required_packages:
+  - wget
+  - curl
+  - libnuma1
+  - libaio1
+  - sysstat

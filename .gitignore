@@ -1,11 +1,41 @@
 ```
-# Configuration and data files for YugabyteDB role
-roles/yugabytedb/defaults/main.yml
-roles/yugabytedb/handlers/main.yml
-roles/yugabytedb/meta/main.yml
-roles/yugabytedb/tasks/main.yml
-roles/yugabytedb/templates/master_gflags.conf.j2
-roles/yugabytedb/templates/tserver_gflags.conf.j2
-roles/yugabytedb/templates/yugabytedb-master.service.j2
-roles/yugabytedb/templates/yugabytedb-tserver.service.j2
+# Ansible roles cache
+roles/*/.ansible-lint
+roles/*/tests/output/
+roles/*/molecule/
+
+# General Python artifacts (in case this is used with Python tooling)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.venv-local/
+.venv-shared/
+.envrc
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 ```

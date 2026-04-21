@@ -1,0 +1,12 @@
+# Master flags configuration
+# This file is managed by Ansible
+
+--fs_data_dirs={{ yugabytedb_data_dir }}/master
+--rpc_bind_addresses={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:{{ yugabytedb_master_ports }}
+--webserver_interface={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}
+{% if yugabytedb_replication_factor is defined %}
+--replication_factor={{ yugabytedb_replication_factor }}
+{% endif %}
+{% if yugabytedb_enable_ysql %}
+--enable_ysql=true
+{% endif %}

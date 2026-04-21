@@ -1,0 +1,132 @@
+---
+# Configure YugabyteDB cluster
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - default.yml
+      paths:
+        - vars
+  tags: ['always']
+
+- name: Disable Transparent Huge Pages (THP)
+  ansible.builtin.shell: |
+    echo never > /sys/kernel/mm/transparent_hugepage/enabled
+    echo never > /sys/kernel/mm/transparent_hugepage/defrag
+  when: yugabytedb_disable_thp | bool
+  tags: ['configure', 'yugabytedb']
+
+- name: Create THP systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/disable-thp.service
+    content: |
+      [Unit]
+      Description=Disable Transparent Huge Pages
+      DefaultDependencies=no
+      After=local-fs.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'echo never > /sys/kernel/mm/transparent_hugepage/enabled'
+      ExecStart=/bin/sh -c 'echo never > /sys/kernel/mm/transparent_hugepage/defrag'
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  when: yugabytedb_disable_thp | bool
+  tags: ['configure', 'yugabytedb']
+
+- name: Enable THP disable service
+  ansible.builtin.systemd:
+    name: disable-thp
+    enabled: true
+    daemon_reload: true
+  when: yugabytedb_disable_thp | bool
+  tags: ['configure', 'yugabytedb']
+
+- name: Set ulimits for yugabyte user
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.d/yugabyte.conf
+    line: "{{ item }}"
+    create: true
+    mode: '0644'
+  loop:
+    - "yugabyte soft nofile 200000"
+    - "yugabyte hard nofile 200000"
+    - "yugabyte soft nproc 131072"
+    - "yugabyte hard nproc 131072"
+    - "yugabyte soft core unlimited"
+    - "yugabyte hard core unlimited"
+  when: yugabytedb_set_ulimits | bool
+  tags: ['configure', 'yugabytedb']
+
+- name: Configure sysctl parameters
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ yugabytedb_sysctl_params }}"
+  tags: ['configure', 'yugabytedb']
+
+- name: Create master configuration file
+  ansible.builtin.template:
+    src: master_flags.conf.j2
+    dest: "{{ yugabytedb_install_dir }}/current/conf/master_flags.conf"
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    mode: '0644'
+  tags: ['configure', 'yugabytedb']
+
+- name: Create tserver configuration file
+  ansible.builtin.template:
+    src: tserver_flags.conf.j2
+    dest: "{{ yugabytedb_install_dir }}/current/conf/tserver_flags.conf"
+    owner: "{{ yugabytedb_user }}"
+    group: "{{ yugabytedb_group }}"
+    mode: '0644'
+  tags: ['configure', 'yugabytedb']
+
+- name: Initialize YugabyteDB cluster on first node
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted start \
+      --background=false \
+      --master_flags="--fs_data_dirs={{ yugabytedb_data_dir }}/master" \
+      --tserver_flags="--fs_data_dirs={{ yugabytedb_data_dir }}/tserver" \
+      --ysql_enable=true \
+      --ycql_enable=true \
+      --replication_factor={{ yugabytedb_replication_factor }}
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  register: cluster_init
+  when: inventory_hostname == groups['yugabytedb_nodes'][0]
+  tags: ['configure', 'yugabytedb']
+
+- name: Add additional nodes to cluster
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted start \
+      --background=false \
+      --join={{ hostvars[groups['yugabytedb_nodes'][0]]['ansible_default_ipv4']['address'] | default(groups['yugabytedb_nodes'][0]) }} \
+      --master_flags="--fs_data_dirs={{ yugabytedb_data_dir }}/master" \
+      --tserver_flags="--fs_data_dirs={{ yugabytedb_data_dir }}/tserver" \
+      --ysql_enable=true \
+      --ycql_enable=true
+  become: true
+  become_user: "{{ yugabytedb_user }}"
+  when: inventory_hostname != groups['yugabytedb_nodes'][0]
+  tags: ['configure', 'yugabytedb']
+
+- name: Wait for cluster to be ready
+  ansible.builtin.shell: |
+    {{ yugabytedb_install_dir }}/current/bin/yugabyted status
+  register: status_check
+  retries: 30
+  delay: 10
+  until: "'Running' in status_check.stdout"
+  changed_when: false
+  when: inventory_hostname == groups['yugabytedb_nodes'][0]
+  tags: ['configure', 'yugabytedb']

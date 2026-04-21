@@ -1,0 +1,14 @@
+# TServer flags configuration
+# This file is managed by Ansible
+
+--fs_data_dirs={{ yugabytedb_data_dir }}/tserver
+--rpc_bind_addresses={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:{{ yugabytedb_tserver_ports }}
+--webserver_interface={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}
+--cql_proxy_bind_address={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:{{ yugabytedb_ycql_port }}
+--sql_proxy_bind_address={{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0]) }}:{{ yugabytedb_ysql_port }}
+{% if yugabytedb_enable_ysql %}
+--enable_ysql=true
+{% endif %}
+{% if yugabytedb_enable_ycql %}
+--enable_cql=true
+{% endif %}
