@@ -1,0 +1,6 @@
+---
+# Requirements for YugabyteDB Ansible Collection
+# Add any required collections or roles here
+
+collections: []
+# roles: []
