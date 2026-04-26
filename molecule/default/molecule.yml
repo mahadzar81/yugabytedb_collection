@@ -1,4 +1,3 @@
----
 # Molecule configuration for YugabyteDB Ansible Collection
 # Consolidated multi-scenario configuration for multiple OS platforms
 
@@ -23,15 +22,14 @@ platforms:
 
 provisioner:
   name: ansible
-  config_options:
-    defaults:
-      remote_tmp: /tmp/ansible
   playbooks:
     converge: converge.yml
     verify: verify.yml
   inventory:
     hosts:
       all:
+        vars:
+          ansible_remote_tmp: /tmp
         hosts:
           default:
             ansible_python_interpreter: /usr/bin/python3
