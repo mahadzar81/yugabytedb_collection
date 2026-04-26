@@ -1,16 +1,8 @@
 ```
-# Configuration and workflow files
-config.json
-.env*
-
-# Dependencies
-node_modules/
-
-# Build artifacts
-dist/
-build/
-*.pyc
-__pycache__/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
 # Environment
 .env
@@ -21,10 +13,35 @@ __pycache__/
 .vscode/
 .idea/
 
-# Logs
-*.log
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+.coverage
 
-# OS
+# Build artifacts
+dist/
+build/
+target/
+*.pyc
+*.class
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# System files
 .DS_Store
 Thumbs.db
+
+# Original rules preserved
+*.log
 ```
