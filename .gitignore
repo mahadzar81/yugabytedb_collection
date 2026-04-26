@@ -1,3 +1,30 @@
 ```
-.github/workflows/
+# Configuration and workflow files
+config.json
+.env*
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.pyc
+__pycache__/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
 ```
