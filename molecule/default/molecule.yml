@@ -31,42 +31,28 @@ provisioner:
       all:
         hosts:
           default:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
           debian11:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: debian
             target_os_version: "11"
           debian12:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: debian
             target_os_version: "12"
           rhel8:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: rhel
             target_os_version: "8"
           rhel9:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: rhel
             target_os_version: "9"
           ubuntu2204:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: ubuntu
             target_os_version: "22.04"
           ubuntu2404:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: ubuntu
             target_os_version: "24.04"
