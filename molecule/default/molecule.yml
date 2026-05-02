@@ -1,4 +1,3 @@
----
 # Molecule configuration for YugabyteDB Ansible Collection
 # Consolidated multi-scenario configuration for multiple OS platforms
 
@@ -8,18 +7,87 @@ driver:
 platforms:
   - name: default
     image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+
   - name: debian11
     image: geerlingguy/docker-debian11-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+    
   - name: debian12
     image: geerlingguy/docker-debian12-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+ 
   - name: rhel8
     image: geerlingguy/docker-rockylinux8-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+  
   - name: rhel9
     image: geerlingguy/docker-rockylinux9-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+
   - name: ubuntu2204
     image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
+
   - name: ubuntu2404
     image: geerlingguy/docker-ubuntu2404-ansible:latest
+    command: ""
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    tmpfs:
+      - /run
+      - /run/lock
 
 provisioner:
   name: ansible
@@ -29,44 +97,32 @@ provisioner:
   inventory:
     hosts:
       all:
+        vars:
+          ansible_remote_tmp: /var/tmp
         hosts:
           default:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
           debian11:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: debian
             target_os_version: "11"
           debian12:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: debian
             target_os_version: "12"
           rhel8:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: rhel
             target_os_version: "8"
           rhel9:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: rhel
             target_os_version: "9"
           ubuntu2204:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: ubuntu
             target_os_version: "22.04"
           ubuntu2404:
-            ansible_host: localhost
-            ansible_user: root
             ansible_python_interpreter: /usr/bin/python3
             target_os: ubuntu
             target_os_version: "24.04"
