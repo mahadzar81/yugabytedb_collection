@@ -5,127 +5,67 @@ driver:
   name: docker
 
 platforms:
-  - name: default
-    image: geerlingguy/docker-ubuntu2204-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-
-  - name: debian11
-    image: geerlingguy/docker-debian11-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-    
-  - name: debian12
-    image: geerlingguy/docker-debian12-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
- 
-  - name: rhel8
-    image: geerlingguy/docker-rockylinux8-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-  
-  - name: rhel9
+  # Test on Rocky Linux 9 (RHEL equivalent)
+  - name: yugabyte-rhel9
     image: geerlingguy/docker-rockylinux9-ansible:latest
-    command: ""
     pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
+    published_ports:
+      - 0.0.0.0:8080:80/tcp
+    # FIX: Force connection as root to bypass sudo password prompts
+    user: root
+    # Systemd capability requirements
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
+    cgroupns_mode: host
+    privileged: true
+    command: "/usr/sbin/init"
 
-  - name: ubuntu2204
+  # Test on Rocky Linux 10 (RHEL equivalent)
+  - name: yugabyte-rhel10
+    image: geerlingguy/docker-rockylinux10-ansible:latest
+    pre_build_image: true
+    published_ports:
+      - 0.0.0.0:8082:80/tcp
+    user: root
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    command: "/usr/sbin/init"
+
+  # Test on Ubuntu 22.04 (Debian equivalent)
+  - name: yugabyte-ubuntu2204
     image: geerlingguy/docker-ubuntu2204-ansible:latest
-    command: ""
     pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
+    published_ports:
+      - 0.0.0.0:8081:80/tcp
+    # Systemd capability requirements
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
+    cgroupns_mode: host
+    privileged: true
+    command: "/lib/systemd/systemd"
 
-  - name: ubuntu2404
+  # Test on Ubuntu 24.04 (Debian equivalent)
+  - name: yugabyte-ubuntu2404
     image: geerlingguy/docker-ubuntu2404-ansible:latest
-    command: ""
     pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
+    published_ports:
+      - 0.0.0.0:8083:80/tcp
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
+    cgroupns_mode: host
+    privileged: true
+    command: "/lib/systemd/systemd"
 
 provisioner:
   name: ansible
   playbooks:
     converge: converge.yml
     verify: verify.yml
-  inventory:
-    hosts:
-      all:
-        vars:
-          ansible_remote_tmp: /var/tmp
-        hosts:
-          default:
-            ansible_python_interpreter: /usr/bin/python3
-          debian11:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "11"
-          debian12:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "12"
-          rhel8:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "8"
-          rhel9:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "9"
-          ubuntu2204:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "22.04"
-          ubuntu2404:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "24.04"
+  config_options:
+    defaults:
+      remote_tmp: /tmp/ansible-tmp
 
 scenario:
   name: default
