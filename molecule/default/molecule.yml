@@ -98,7 +98,7 @@ provisioner:
     hosts:
       all:
         vars:
-          ansible_remote_tmp: /var/tmp
+          ansible_remote_tmp: /tmp/ansible-tmp
         hosts:
           default:
             ansible_python_interpreter: /usr/bin/python3
