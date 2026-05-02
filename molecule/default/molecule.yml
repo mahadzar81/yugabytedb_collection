@@ -63,38 +63,9 @@ provisioner:
   playbooks:
     converge: converge.yml
     verify: verify.yml
-  inventory:
-    hosts:
-      all:
-        vars:
-          ansible_remote_tmp: ~/.ansible/tmp
-        hosts:
-          default:
-            ansible_python_interpreter: /usr/bin/python3
-          debian11:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "11"
-          debian12:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "12"
-          rhel8:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "8"
-          rhel9:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "9"
-          ubuntu2204:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "22.04"
-          ubuntu2404:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "24.04"
+  config_options:
+    defaults:
+      remote_tmp: /tmp/ansible-tmp
 
 scenario:
   name: default
