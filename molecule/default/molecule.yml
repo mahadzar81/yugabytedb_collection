@@ -16,7 +16,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+
   - name: debian11
     image: geerlingguy/docker-debian11-ansible:latest
     command: ""
@@ -28,7 +28,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+    
   - name: debian12
     image: geerlingguy/docker-debian12-ansible:latest
     command: ""
@@ -40,7 +40,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+ 
   - name: rhel8
     image: geerlingguy/docker-rockylinux8-ansible:latest
     command: ""
@@ -52,7 +52,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+  
   - name: rhel9
     image: geerlingguy/docker-rockylinux9-ansible:latest
     command: ""
@@ -64,7 +64,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+
   - name: ubuntu2204
     image: geerlingguy/docker-ubuntu2204-ansible:latest
     command: ""
@@ -76,7 +76,7 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
+
   - name: ubuntu2404
     image: geerlingguy/docker-ubuntu2404-ansible:latest
     command: ""
@@ -88,7 +88,6 @@ platforms:
     tmpfs:
       - /run
       - /run/lock
-      - /tmp
 
 provisioner:
   name: ansible
