@@ -6,7 +6,7 @@ driver:
 
 platforms:
   # Test on Rocky Linux 9 (RHEL equivalent)
-  - name: nagios-rhel9
+  - name: yugabyte-rhel9
     image: geerlingguy/docker-rockylinux9-ansible:latest
     pre_build_image: true
     published_ports:
@@ -21,7 +21,7 @@ platforms:
     command: "/usr/sbin/init"
 
   # Test on Rocky Linux 10 (RHEL equivalent)
-  - name: nagios-rhel10
+  - name: yugabyte-rhel10
     image: geerlingguy/docker-rockylinux10-ansible:latest
     pre_build_image: true
     published_ports:
@@ -34,7 +34,7 @@ platforms:
     command: "/usr/sbin/init"
 
   # Test on Ubuntu 22.04 (Debian equivalent)
-  - name: nagios-ubuntu2204
+  - name: yugabyte-ubuntu2204
     image: geerlingguy/docker-ubuntu2204-ansible:latest
     pre_build_image: true
     published_ports:
@@ -47,7 +47,7 @@ platforms:
     command: "/lib/systemd/systemd"
 
   # Test on Ubuntu 24.04 (Debian equivalent)
-  - name: nagios-ubuntu2404
+  - name: yugabyte-ubuntu2404
     image: geerlingguy/docker-ubuntu2404-ansible:latest
     pre_build_image: true
     published_ports:
