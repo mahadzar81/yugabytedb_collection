@@ -1,72 +1,62 @@
-# molecule/default/molecule.yml
+---
 dependency:
   name: galaxy
 
 driver:
-  name: docker   # or podman
+  name: docker
 
 platforms:
-  - name: yugabyte-rhel9
-    image: "registry.access.redhat.com/ubi9/ubi:latest"
+  - name: yugabyte-ubuntu2404
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
     pre_build_image: true
     privileged: true
-    command: /sbin/init
-    tmpfs:
-      - /run
-      - /tmp
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    groups:
-      - yugabytedb_nodes
-
-  - name: yugabyte-rhel10
-    image: "registry.access.redhat.com/ubi10/ubi:latest"
-    pre_build_image: true
-    privileged: true
-    command: /sbin/init
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     tmpfs:
-      - /run
       - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    groups:
-      - yugabytedb_nodes
+      - /run
 
   - name: yugabyte-ubuntu2204
-    image: "geerlingguy/docker-ubuntu2204-ansible:latest"
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
     pre_build_image: true
     privileged: true
-    command: /sbin/init
     tmpfs:
-      - /run
       - /tmp
-    groups:
-      - yugabytedb_nodes
+      - /run
 
-  - name: yugabyte-ubuntu2404
-    image: "geerlingguy/docker-ubuntu2404-ansible:latest"
+  - name: yugabyte-rhel9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
     pre_build_image: true
     privileged: true
-    command: /sbin/init
     tmpfs:
-      - /run
       - /tmp
-    groups:
-      - yugabytedb_nodes
+      - /run
+
+  - name: yugabyte-rhel10
+    image: geerlingguy/docker-rockylinux9-ansible:latest  # use closest available
+    pre_build_image: true
+    privileged: true
+    tmpfs:
+      - /tmp
+      - /run
 
 provisioner:
   name: ansible
   config_options:
     defaults:
-      remote_tmp: /tmp/.ansible/tmp        # ← KEY FIX #1
-      remote_user: root
-    ssh_connection:
-      pipelining: true
+      remote_tmp: /tmp/.ansible/tmp
+      interpreter_python: auto_silent
   inventory:
-    group_vars:
-      all:
-        ansible_user: root
-        ansible_shell_executable: /bin/bash  # ← KEY FIX #2
+    host_vars:
+      yugabyte-ubuntu2404:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-ubuntu2204:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-rhel9:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-rhel10:
+        ansible_python_interpreter: /usr/bin/python3
 
 verifier:
   name: ansible
