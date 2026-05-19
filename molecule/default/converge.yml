@@ -3,6 +3,7 @@
 # Molecule calls this playbook with `molecule converge`.
 - name: Converge
   hosts: all
+  become: false
   gather_facts: true
   tasks:
     - name: Apply install role

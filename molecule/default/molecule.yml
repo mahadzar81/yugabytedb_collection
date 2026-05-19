@@ -1,143 +1,62 @@
-# Molecule configuration for YugabyteDB Ansible Collection
-# Consolidated multi-scenario configuration for multiple OS platforms
+---
+dependency:
+  name: galaxy
 
 driver:
   name: docker
 
 platforms:
-  - name: default
-    image: geerlingguy/docker-ubuntu2204-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-
-  - name: debian11
-    image: geerlingguy/docker-debian11-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-    
-  - name: debian12
-    image: geerlingguy/docker-debian12-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
- 
-  - name: rhel8
-    image: geerlingguy/docker-rockylinux8-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-  
-  - name: rhel9
-    image: geerlingguy/docker-rockylinux9-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-
-  - name: ubuntu2204
-    image: geerlingguy/docker-ubuntu2204-ansible:latest
-    command: ""
-    pre_build_image: true
-    privileged: true
-    cgroupns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    tmpfs:
-      - /run
-      - /run/lock
-
-  - name: ubuntu2404
+  - name: yugabyte-ubuntu2404
     image: geerlingguy/docker-ubuntu2404-ansible:latest
-    command: ""
     pre_build_image: true
     privileged: true
-    cgroupns_mode: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     tmpfs:
+      - /tmp
       - /run
-      - /run/lock
+
+  - name: yugabyte-ubuntu2204
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    pre_build_image: true
+    privileged: true
+    tmpfs:
+      - /tmp
+      - /run
+
+  - name: yugabyte-rhel9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    pre_build_image: true
+    privileged: true
+    tmpfs:
+      - /tmp
+      - /run
+
+  - name: yugabyte-rhel10
+    image: geerlingguy/docker-rockylinux9-ansible:latest  # use closest available
+    pre_build_image: true
+    privileged: true
+    tmpfs:
+      - /tmp
+      - /run
 
 provisioner:
   name: ansible
-  playbooks:
-    converge: converge.yml
-    verify: verify.yml
+  config_options:
+    defaults:
+      remote_tmp: /tmp/.ansible/tmp
+      interpreter_python: auto_silent
   inventory:
-    hosts:
-      all:
-        vars:
-          ansible_remote_tmp: /var/tmp
-        hosts:
-          default:
-            ansible_python_interpreter: /usr/bin/python3
-          debian11:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "11"
-          debian12:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: debian
-            target_os_version: "12"
-          rhel8:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "8"
-          rhel9:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: rhel
-            target_os_version: "9"
-          ubuntu2204:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "22.04"
-          ubuntu2404:
-            ansible_python_interpreter: /usr/bin/python3
-            target_os: ubuntu
-            target_os_version: "24.04"
+    host_vars:
+      yugabyte-ubuntu2404:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-ubuntu2204:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-rhel9:
+        ansible_python_interpreter: /usr/bin/python3
+      yugabyte-rhel10:
+        ansible_python_interpreter: /usr/bin/python3
 
-scenario:
-  name: default
-  test_sequence:
-    - cleanup
-    - destroy
-    - syntax
-    - create
-    - prepare
-    - converge
-    - idempotence
-    - side_effect
-    - verify
-    - cleanup
-    - destroy
+verifier:
+  name: ansible
