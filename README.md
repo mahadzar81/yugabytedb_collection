@@ -382,14 +382,14 @@ pip install molecule molecule-plugins[docker] ansible-core docker
 ### Run the default scenario (preflight unit tests, all OS variants)
 
 ```bash
-cd yugabyte/db
+cd yugabytedb_collection
 molecule test --scenario-name default
 ```
 
 ### Run the cluster integration scenario
 
 ```bash
-cd yugabyte/db
+cd yugabytedb_collection
 molecule test --scenario-name cluster
 ```
 
