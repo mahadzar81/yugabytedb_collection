@@ -47,11 +47,11 @@ jobs:
           pip install yamllint ansible-lint ansible-core
 
       - name: Run yamllint
-        run: yamllint yugabyte/db/
+        run: yamllint yugabytedb_collection/
 
       - name: Run ansible-lint
         run: |
-          cd yugabyte/db
+          cd yugabytedb_collection
           ansible-lint
 
   # ─────────────────────────────────────────────────────────────────────────
@@ -107,11 +107,11 @@ jobs:
             ansible-lint
 
       - name: Install Ansible collection dependencies
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Molecule default scenario
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         env:
           MOLECULE_IMAGE: ${{ matrix.image }}
         run: |
@@ -148,11 +148,11 @@ jobs:
             ansible-lint
 
       - name: Install Ansible collection dependencies
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Molecule cluster scenario
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         run: molecule test --scenario-name cluster
         timeout-minutes: 45
 
@@ -180,14 +180,14 @@ jobs:
         run: pip install ansible-core
 
       - name: Build collection
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         run: ansible-galaxy collection build --output-path /tmp/build
 
       - name: Publish collection
-        working-directory: yugabyte/db
+        working-directory: yugabytedb_collection
         env:
           ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
         run: |
           ansible-galaxy collection publish \
-            /tmp/build/yugabyte-db-*.tar.gz \
+            /tmp/build/yugabytedb_collection-*.tar.gz \
             --api-key "$ANSIBLE_GALAXY_TOKEN"
