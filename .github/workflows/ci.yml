@@ -46,11 +46,10 @@ jobs:
           pip install yamllint ansible-lint ansible-core
 
       - name: Run yamllint
-        run: yamllint yugabytedb_collection/
+        run: yamllint .
 
       - name: Run ansible-lint
         run: |
-          cd yugabytedb_collection
           ansible-lint
 
   # ─────────────────────────────────────────────────────────────────────────
