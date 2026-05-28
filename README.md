@@ -85,7 +85,7 @@ ansible-galaxy collection install -r requirements.yml
 ## Collection Structure
 
 ```
-yugabyte/db/
+yugabytedb_collection/
 ├── galaxy.yml                  # Collection manifest
 ├── requirements.yml            # Collection dependencies
 ├── .ansible-lint               # Lint rules
