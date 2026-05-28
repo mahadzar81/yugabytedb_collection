@@ -1,0 +1,63 @@
+---
+- name: Enable and start yb-master service
+  ansible.builtin.service:
+    name: yb-master
+    state: started
+    enabled: true
+
+- name: Wait for yb-master RPC port to be available
+  ansible.builtin.wait_for:
+    host: "{{ yugabyte_master_rpc_bind_address }}"
+    port: "{{ yugabyte_master_rpc_port }}"
+    delay: "{{ yugabyte_master_start_delay }}"
+    timeout: "{{ yugabyte_master_start_timeout }}"
+    state: started
+
+- name: Wait for yb-master HTTP port to be available
+  ansible.builtin.wait_for:
+    host: "{{ yugabyte_master_rpc_bind_address }}"
+    port: "{{ yugabyte_master_http_port }}"
+    timeout: "{{ yugabyte_master_start_timeout }}"
+    state: started
+
+# ── Cluster initialisation (leader node only) ────────────────────────────────
+- name: Check if cluster already initialised
+  ansible.builtin.stat:
+    path: "{{ yugabyte_cluster_init_flag }}"
+  register: _init_flag
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Initialise YugabyteDB cluster (yb-admin create_keyspace)
+  ansible.builtin.command:
+    cmd: >
+      {{ _yugabyte_symlink }}/bin/yb-admin
+      --master_addresses {{ _yugabyte_master_addresses }}
+      list_all_masters
+  become: true
+  become_user: yugabyte
+  register: _cluster_check
+  changed_when: false
+  retries: 5
+  delay: 10
+  until: _cluster_check.rc == 0
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+  when:
+    - yugabyte_initialize_cluster
+    - not _init_flag.stat.exists
+
+- name: Create cluster init flag
+  ansible.builtin.file:
+    path: "{{ yugabyte_cluster_init_flag }}"
+    state: touch
+    owner: yugabyte
+    group: yugabyte
+    mode: "0644"
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+  when:
+    - yugabyte_initialize_cluster
+    - not _init_flag.stat.exists
+    - _cluster_check is defined
+    - _cluster_check.rc == 0

@@ -1,0 +1,193 @@
+---
+name: CI – Molecule Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "release/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    # Nightly run at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ANSIBLE_FORCE_COLOR: "1"
+  PY_COLORS: "1"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lint
+  # ─────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (yamllint + ansible-lint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install lint tools
+        run: |
+          pip install --upgrade pip
+          pip install yamllint ansible-lint ansible-core
+
+      - name: Run yamllint
+        run: yamllint yugabyte/db/
+
+      - name: Run ansible-lint
+        run: |
+          cd yugabyte/db
+          ansible-lint
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Molecule – default scenario (preflight unit tests, multi-OS matrix)
+  # ─────────────────────────────────────────────────────────────────────────
+  molecule-default:
+    name: "Molecule default | ${{ matrix.image }}"
+    runs-on: ubuntu-latest
+    needs: lint
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # RHEL family
+          - image: geerlingguy/docker-rockylinux8-ansible:latest
+            os_label: "RHEL 8 (Rocky)"
+          - image: geerlingguy/docker-rockylinux9-ansible:latest
+            os_label: "RHEL 9 (Rocky)"
+          - image: borisskert/docker-almalinux10-ansible:latest
+            os_label: "RHEL 10 (AlmaLinux)"
+          # Debian family
+          - image: geerlingguy/docker-debian11-ansible:latest
+            os_label: "Debian 11"
+          - image: geerlingguy/docker-debian12-ansible:latest
+            os_label: "Debian 12"
+          - image: geerlingguy/docker-debian13-ansible:latest
+            os_label: "Debian 13"
+          # Ubuntu family
+          - image: geerlingguy/docker-ubuntu2204-ansible:latest
+            os_label: "Ubuntu 22.04"
+          - image: geerlingguy/docker-ubuntu2404-ansible:latest
+            os_label: "Ubuntu 24.04"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Molecule and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            ansible-core \
+            molecule \
+            molecule-plugins[docker] \
+            docker \
+            ansible-lint
+
+      - name: Install Ansible collection dependencies
+        working-directory: yugabyte/db
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Molecule default scenario
+        working-directory: yugabyte/db
+        env:
+          MOLECULE_IMAGE: ${{ matrix.image }}
+        run: |
+          # Override the platform image via env-driven molecule.yml interpolation
+          molecule test --scenario-name default
+        timeout-minutes: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Molecule – cluster scenario (3-master + 3-tserver stub cluster)
+  # ─────────────────────────────────────────────────────────────────────────
+  molecule-cluster:
+    name: Molecule cluster scenario
+    runs-on: ubuntu-latest
+    needs: molecule-default
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Molecule and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            ansible-core \
+            molecule \
+            molecule-plugins[docker] \
+            docker \
+            ansible-lint
+
+      - name: Install Ansible collection dependencies
+        working-directory: yugabyte/db
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Molecule cluster scenario
+        working-directory: yugabyte/db
+        run: molecule test --scenario-name cluster
+        timeout-minutes: 45
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Build and publish the collection to Ansible Galaxy
+  # ─────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish to Ansible Galaxy
+    runs-on: ubuntu-latest
+    needs:
+      - molecule-default
+      - molecule-cluster
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible-core
+        run: pip install ansible-core
+
+      - name: Build collection
+        working-directory: yugabyte/db
+        run: ansible-galaxy collection build --output-path /tmp/build
+
+      - name: Publish collection
+        working-directory: yugabyte/db
+        env:
+          ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
+        run: |
+          ansible-galaxy collection publish \
+            /tmp/build/yugabyte-db-*.tar.gz \
+            --api-key "$ANSIBLE_GALAXY_TOKEN"

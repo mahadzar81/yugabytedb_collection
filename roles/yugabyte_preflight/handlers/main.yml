@@ -1,0 +1,12 @@
+---
+- name: Restart chrony
+  ansible.builtin.service:
+    name: chronyd
+    state: restarted
+
+- name: Reload systemd and enable THP service
+  ansible.builtin.systemd:
+    name: disable-thp
+    daemon_reload: true
+    state: started
+    enabled: true

@@ -1,0 +1,237 @@
+---
+- name: Gather OS facts
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+      - network
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['RedHat', 'Debian']
+    fail_msg: >
+      Unsupported OS family '{{ ansible_os_family }}'.
+      Supported: RHEL 8/9/10, Debian 11/12/13, Ubuntu 22.04/24.04.
+
+- name: Assert RHEL major version
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version | int in [8, 9, 10]
+    fail_msg: >
+      Unsupported RHEL version {{ ansible_distribution_major_version }}.
+      Supported: 8, 9, 10.
+  when: ansible_os_family == 'RedHat'
+
+- name: Assert Debian/Ubuntu version
+  ansible.builtin.assert:
+    that: >
+      (ansible_distribution == 'Debian' and
+       ansible_distribution_major_version | int in [11, 12, 13]) or
+      (ansible_distribution == 'Ubuntu' and
+       ansible_distribution_version in ['22.04', '24.04'])
+    fail_msg: >
+      Unsupported Debian/Ubuntu version.
+      Supported: Debian 11/12/13, Ubuntu 22.04/24.04.
+  when: ansible_os_family == 'Debian'
+
+# ── Hardware checks ──────────────────────────────────────────────────────────
+- name: Assert minimum RAM
+  ansible.builtin.assert:
+    that:
+      - ansible_memtotal_mb >= yugabyte_min_ram_mb
+    fail_msg: >
+      Insufficient RAM: {{ ansible_memtotal_mb }} MB available,
+      {{ yugabyte_min_ram_mb }} MB required.
+
+- name: Assert minimum CPU cores
+  ansible.builtin.assert:
+    that:
+      - ansible_processor_vcpus >= yugabyte_min_cpu_cores
+    fail_msg: >
+      Insufficient CPUs: {{ ansible_processor_vcpus }} found,
+      {{ yugabyte_min_cpu_cores }} required.
+
+- name: Check root filesystem free space
+  ansible.builtin.shell: |
+    df --output=avail -BG / | tail -1 | tr -d 'G'
+  register: _root_free_gb
+  changed_when: false
+
+- name: Assert minimum disk space
+  ansible.builtin.assert:
+    that:
+      - _root_free_gb.stdout | int >= yugabyte_min_disk_gb
+    fail_msg: >
+      Insufficient disk space: {{ _root_free_gb.stdout }} GB free,
+      {{ yugabyte_min_disk_gb }} GB required.
+
+# ── Package prerequisites ────────────────────────────────────────────────────
+- name: Install prerequisite packages (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - python3
+      - python3-libselinux
+      - libsemanage
+      - chrony
+      - policycoreutils-python-utils
+      - iproute
+      - net-tools
+      - curl
+      - tar
+      - which
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Install prerequisite packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - python3
+      - chrony
+      - iproute2
+      - net-tools
+      - curl
+      - tar
+      - which
+      - libssl-dev
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+
+# ── SELinux ──────────────────────────────────────────────────────────────────
+- name: Set SELinux to permissive (RedHat)
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_selinux.status != 'disabled'
+
+# ── NTP / chrony ─────────────────────────────────────────────────────────────
+- name: Configure chrony
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: yugabyte_configure_ntp
+  notify: Restart chrony
+
+- name: Enable and start chrony
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: true
+  when: yugabyte_configure_ntp
+
+# ── Kernel tuning ────────────────────────────────────────────────────────────
+- name: Apply sysctl tuning
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop:
+    - { key: vm.swappiness,              value: "0" }
+    - { key: net.core.somaxconn,         value: "32768" }
+    - { key: net.ipv4.tcp_max_syn_backlog, value: "8096" }
+    - { key: net.core.netdev_max_backlog, value: "10000" }
+    - { key: vm.max_map_count,           value: "262144" }
+    - { key: kernel.core_pattern,        value: "/tmp/yb_core_%e.%p.%t" }
+  when: yugabyte_configure_kernel
+
+- name: Configure transparent huge pages (grub / runtime)
+  ansible.builtin.template:
+    src: thp.service.j2
+    dest: /etc/systemd/system/disable-thp.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd and enable THP service
+  when: yugabyte_configure_kernel
+
+- name: Set file descriptor limits
+  community.general.pam_limits:
+    domain: "{{ item }}"
+    limit_type: "-"
+    limit_item: nofile
+    value: "{{ yugabyte_ulimit_nofile }}"
+  loop:
+    - yugabyte
+    - root
+
+- name: Set nproc limits
+  community.general.pam_limits:
+    domain: "{{ item }}"
+    limit_type: "-"
+    limit_item: nproc
+    value: "{{ yugabyte_ulimit_nproc }}"
+  loop:
+    - yugabyte
+    - root
+
+# ── Firewall ─────────────────────────────────────────────────────────────────
+- name: Open YugabyteDB ports (firewalld)
+  ansible.posix.firewalld:
+    port: "{{ item }}/tcp"
+    zone: "{{ yugabyte_firewall_zones | first }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - "{{ yugabyte_master_rpc_port }}"
+    - "{{ yugabyte_master_http_port }}"
+    - "{{ yugabyte_tserver_rpc_port }}"
+    - "{{ yugabyte_tserver_http_port }}"
+    - "{{ yugabyte_ysql_port }}"
+    - "{{ yugabyte_ycql_port }}"
+    - "{{ yugabyte_yedis_port }}"
+    - "{{ yugabyte_node_exporter_port }}"
+  when:
+    - yugabyte_manage_firewall
+    - ansible_os_family == 'RedHat'
+  ignore_errors: true   # firewalld may not be running in containers/CI
+
+- name: Open YugabyteDB ports (ufw)
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "{{ yugabyte_master_rpc_port }}"
+    - "{{ yugabyte_master_http_port }}"
+    - "{{ yugabyte_tserver_rpc_port }}"
+    - "{{ yugabyte_tserver_http_port }}"
+    - "{{ yugabyte_ysql_port }}"
+    - "{{ yugabyte_ycql_port }}"
+    - "{{ yugabyte_yedis_port }}"
+    - "{{ yugabyte_node_exporter_port }}"
+  when:
+    - yugabyte_manage_firewall
+    - ansible_os_family == 'Debian'
+  ignore_errors: true
+
+# ── yugabyte OS user ─────────────────────────────────────────────────────────
+- name: Create yugabyte group
+  ansible.builtin.group:
+    name: yugabyte
+    state: present
+
+- name: Create yugabyte user
+  ansible.builtin.user:
+    name: yugabyte
+    group: yugabyte
+    shell: /bin/bash
+    home: /home/yugabyte
+    create_home: true
+    system: false
+    comment: YugabyteDB service account
+
+- name: Allow yugabyte to run yugabyte services via sudo (passwordless)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/yugabyte
+    content: "yugabyte ALL=(ALL) NOPASSWD: /usr/bin/systemctl\n"
+    mode: "0440"
+    validate: visudo -cf %s

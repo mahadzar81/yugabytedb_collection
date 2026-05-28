@@ -1,0 +1,16 @@
+---
+- name: Converge – full cluster deployment (stub binaries)
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+  roles:
+    - role: yugabyte.db.yugabyte_preflight
+    - role: yugabyte.db.yugabyte_configure

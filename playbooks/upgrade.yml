@@ -1,0 +1,78 @@
+---
+# yugabyte.db – upgrade.yml
+# Upgrades an existing YugabyteDB cluster to a new version.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml \
+#     yugabyte/db/playbooks/upgrade.yml \
+#     -e "yugabyte_version=2.21.0.0 yugabyte_build=b12"
+
+- name: Install new YugabyteDB binaries on all nodes
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_install
+
+- name: Update configuration files
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_configure
+
+- name: Update tserver configuration files
+  hosts: yugabyte_tservers
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_configure
+
+- name: Rolling restart masters to pick up new version
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: true
+  serial: 1
+  tasks:
+    - name: Restart yb-master
+      ansible.builtin.service:
+        name: yb-master
+        state: restarted
+
+    - name: Wait for master to be healthy
+      ansible.builtin.wait_for:
+        host: "{{ ansible_default_ipv4.address }}"
+        port: "{{ yugabyte_master_rpc_port | default(7100) }}"
+        timeout: 180
+
+    - name: Pause for stabilisation
+      ansible.builtin.pause:
+        seconds: 15
+
+- name: Rolling restart tservers to pick up new version
+  hosts: yugabyte_tservers
+  become: true
+  gather_facts: true
+  serial: 1
+  tasks:
+    - name: Restart yb-tserver
+      ansible.builtin.service:
+        name: yb-tserver
+        state: restarted
+
+    - name: Wait for tserver to be healthy
+      ansible.builtin.wait_for:
+        host: "{{ ansible_default_ipv4.address }}"
+        port: "{{ yugabyte_tserver_rpc_port | default(9100) }}"
+        timeout: 180
+
+    - name: Pause for stabilisation
+      ansible.builtin.pause:
+        seconds: 15
+
+- name: Final cluster health check
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: false
+  roles:
+    - role: yugabyte.db.yugabyte_cluster

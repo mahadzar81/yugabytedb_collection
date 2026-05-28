@@ -1,0 +1,46 @@
+---
+- name: Enable and start yb-tserver service
+  ansible.builtin.service:
+    name: yb-tserver
+    state: started
+    enabled: true
+
+- name: Wait for yb-tserver RPC port to be available
+  ansible.builtin.wait_for:
+    host: "{{ yugabyte_tserver_rpc_bind_address }}"
+    port: "{{ yugabyte_tserver_rpc_port }}"
+    delay: "{{ yugabyte_tserver_start_delay }}"
+    timeout: "{{ yugabyte_tserver_start_timeout }}"
+    state: started
+
+- name: Wait for YSQL port to be available
+  ansible.builtin.wait_for:
+    host: "{{ yugabyte_tserver_rpc_bind_address }}"
+    port: "{{ yugabyte_ysql_port }}"
+    timeout: "{{ yugabyte_tserver_start_timeout }}"
+    state: started
+  when: yugabyte_enable_ysql
+
+- name: Wait for YCQL port to be available
+  ansible.builtin.wait_for:
+    host: "{{ yugabyte_tserver_rpc_bind_address }}"
+    port: "{{ yugabyte_ycql_port }}"
+    timeout: "{{ yugabyte_tserver_start_timeout }}"
+    state: started
+  when: yugabyte_enable_ycql
+
+- name: Verify tserver registered with masters
+  ansible.builtin.command:
+    cmd: >
+      {{ _yugabyte_symlink }}/bin/yb-admin
+      --master_addresses {{ _yugabyte_master_addresses }}
+      list_all_tablet_servers
+  become: true
+  become_user: yugabyte
+  register: _tserver_list
+  changed_when: false
+  retries: 6
+  delay: 10
+  until:
+    - _tserver_list.rc == 0
+    - yugabyte_tserver_rpc_bind_address in _tserver_list.stdout

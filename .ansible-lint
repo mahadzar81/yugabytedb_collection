@@ -1,0 +1,13 @@
+---
+profile: production
+
+exclude_paths:
+  - molecule/
+  - .github/
+
+warn_list:
+  - yaml[line-length]
+
+skip_list:
+  - role-name                # we use underscores intentionally
+  - galaxy[no-runtime]

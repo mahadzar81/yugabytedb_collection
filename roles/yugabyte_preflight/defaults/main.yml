@@ -1,0 +1,34 @@
+---
+# Minimum resource requirements
+yugabyte_min_ram_mb: 2048
+yugabyte_min_cpu_cores: 2
+yugabyte_min_disk_gb: 20
+
+# NTP / chrony settings
+yugabyte_configure_ntp: true
+yugabyte_ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+  - 3.pool.ntp.org
+
+# Kernel / sysctl tuning
+yugabyte_configure_kernel: true
+yugabyte_transparent_hugepages: madvise   # madvise | never | always
+yugabyte_ulimit_nofile: 1048576
+yugabyte_ulimit_nproc: 12000
+
+# Firewall management
+yugabyte_manage_firewall: true
+yugabyte_firewall_zones:
+  - public
+
+# Ports that must be open
+yugabyte_master_rpc_port: 7100
+yugabyte_master_http_port: 7000
+yugabyte_tserver_rpc_port: 9100
+yugabyte_tserver_http_port: 9000
+yugabyte_ysql_port: 5433
+yugabyte_ycql_port: 9042
+yugabyte_yedis_port: 6379
+yugabyte_node_exporter_port: 9300

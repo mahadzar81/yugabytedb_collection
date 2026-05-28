@@ -1,0 +1,51 @@
+---
+- name: Verify – preflight role outcomes
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check yugabyte user exists
+      ansible.builtin.user:
+        name: yugabyte
+      check_mode: true
+      register: _yb_user
+      failed_when: _yb_user is changed
+
+    - name: Check yugabyte group exists
+      ansible.builtin.group:
+        name: yugabyte
+      check_mode: true
+      register: _yb_group
+      failed_when: _yb_group is changed
+
+    - name: Verify sudoers file exists
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/yugabyte
+      register: _sudoers
+      failed_when: not _sudoers.stat.exists
+
+    - name: Verify prerequisite packages installed (RedHat)
+      ansible.builtin.package:
+        name: chrony
+        state: present
+      check_mode: true
+      register: _pkg_check
+      failed_when: _pkg_check is changed
+      when: ansible_os_family == 'RedHat'
+
+    - name: Verify prerequisite packages installed (Debian)
+      ansible.builtin.package:
+        name: chrony
+        state: present
+      check_mode: true
+      register: _pkg_check_deb
+      failed_when: _pkg_check_deb is changed
+      when: ansible_os_family == 'Debian'
+
+    - name: Verify profile.d entry for PATH (after install role)
+      ansible.builtin.stat:
+        path: /etc/profile.d/yugabyte.sh
+      register: _profile
+      # not yet created in preflight-only test – just info
+      changed_when: false

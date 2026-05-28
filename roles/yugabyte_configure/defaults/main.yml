@@ -1,0 +1,44 @@
+---
+# ── Cluster topology ─────────────────────────────────────────────────────────
+# yugabyte_master_nodes and yugabyte_tserver_nodes are expected to be
+# provided by the caller (inventory group names or explicit lists).
+yugabyte_replication_factor: 3
+
+# ── Master configuration ─────────────────────────────────────────────────────
+yugabyte_master_rpc_bind_address: "{{ ansible_default_ipv4.address }}"
+yugabyte_master_rpc_port: 7100
+yugabyte_master_http_port: 7000
+yugabyte_master_fs_data_dirs: "{{ yugabyte_data_dir }}/master"
+yugabyte_master_log_dir: "{{ yugabyte_log_dir }}/master"
+yugabyte_master_extra_flags: {}
+
+# ── TServer configuration ────────────────────────────────────────────────────
+yugabyte_tserver_rpc_bind_address: "{{ ansible_default_ipv4.address }}"
+yugabyte_tserver_rpc_port: 9100
+yugabyte_tserver_http_port: 9000
+yugabyte_tserver_fs_data_dirs: "{{ yugabyte_data_dir }}/tserver"
+yugabyte_tserver_log_dir: "{{ yugabyte_log_dir }}/tserver"
+yugabyte_ysql_port: 5433
+yugabyte_ycql_port: 9042
+yugabyte_yedis_port: 6379
+yugabyte_tserver_extra_flags: {}
+
+# ── YSQL / YCQL features ─────────────────────────────────────────────────────
+yugabyte_enable_ysql: true
+yugabyte_enable_ycql: true
+yugabyte_enable_yedis: false
+
+# ── TLS settings ─────────────────────────────────────────────────────────────
+yugabyte_enable_tls: false
+yugabyte_cert_dir: /etc/yugabyte/certs
+yugabyte_ca_cert: ""
+yugabyte_node_cert: ""
+yugabyte_node_key: ""
+
+# ── Authentication ───────────────────────────────────────────────────────────
+yugabyte_ysql_auth: false   # enable md5 / scram-sha-256 for YSQL
+yugabyte_ycql_auth: false   # enable auth for YCQL
+
+# ── Backup / archive ─────────────────────────────────────────────────────────
+yugabyte_enable_backup: false
+yugabyte_backup_dir: /mnt/backup/yugabyte

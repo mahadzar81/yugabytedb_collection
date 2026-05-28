@@ -1,0 +1,55 @@
+---
+# yugabyte.db – rolling_restart.yml
+# Performs a rolling restart of masters then tservers.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml \
+#     yugabyte/db/playbooks/rolling_restart.yml \
+#     [-e "restart_masters=true"] [-e "restart_tservers=true"]
+
+- name: Rolling restart – masters
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: true
+  serial: 1
+  vars:
+    restart_masters: true
+  tasks:
+    - name: Restart yb-master
+      ansible.builtin.service:
+        name: yb-master
+        state: restarted
+      when: restart_masters | bool
+
+    - name: Wait for master RPC port
+      ansible.builtin.wait_for:
+        host: "{{ ansible_default_ipv4.address }}"
+        port: "{{ yugabyte_master_rpc_port | default(7100) }}"
+        timeout: 120
+      when: restart_masters | bool
+
+- name: Rolling restart – tservers
+  hosts: yugabyte_tservers
+  become: true
+  gather_facts: true
+  serial: 1
+  vars:
+    restart_tservers: true
+  tasks:
+    - name: Restart yb-tserver
+      ansible.builtin.service:
+        name: yb-tserver
+        state: restarted
+      when: restart_tservers | bool
+
+    - name: Wait for tserver RPC port
+      ansible.builtin.wait_for:
+        host: "{{ ansible_default_ipv4.address }}"
+        port: "{{ yugabyte_tserver_rpc_port | default(9100) }}"
+        timeout: 120
+      when: restart_tservers | bool
+
+    - name: Pause between tserver restarts
+      ansible.builtin.pause:
+        seconds: 10
+      when: restart_tservers | bool

@@ -1,0 +1,62 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: docker
+
+platforms:
+  - name: yb-rhel8
+    image: geerlingguy/docker-rockylinux8-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /usr/sbin/init
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - yugabyte_masters
+      - yugabyte_tservers
+      - yugabyte_nodes
+
+  - name: yb-ubuntu2204
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    groups:
+      - yugabyte_masters
+      - yugabyte_tservers
+      - yugabyte_nodes
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    group_vars:
+      all:
+        yugabyte_version: "2.20.3.0"
+        yugabyte_build: "b68"
+        yugabyte_replication_factor: 1
+        yugabyte_configure_ntp: false      # no chrony in Docker
+        yugabyte_manage_firewall: false    # no firewalld in Docker
+        yugabyte_configure_kernel: false   # no sysctl in unprivileged containers
+        yugabyte_min_ram_mb: 512           # relax for CI
+        yugabyte_min_cpu_cores: 1
+        yugabyte_min_disk_gb: 5
+        yugabyte_run_ysql_healthcheck: false  # no live YB in unit tests
+
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+
+verifier:
+  name: ansible

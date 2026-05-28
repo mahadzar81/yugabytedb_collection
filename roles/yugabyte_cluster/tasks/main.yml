@@ -1,0 +1,98 @@
+---
+# Run from the first master node
+- name: Check cluster master status
+  ansible.builtin.command:
+    cmd: >
+      {{ _yugabyte_symlink }}/bin/yb-admin
+      --master_addresses {{ _yugabyte_master_addresses }}
+      list_all_masters
+  become: true
+  become_user: yugabyte
+  register: _master_status
+  changed_when: false
+  retries: "{{ yugabyte_health_check_retries }}"
+  delay: "{{ yugabyte_health_check_delay }}"
+  until: _master_status.rc == 0
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Display master status
+  ansible.builtin.debug:
+    msg: "{{ _master_status.stdout_lines }}"
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Check cluster tablet server status
+  ansible.builtin.command:
+    cmd: >
+      {{ _yugabyte_symlink }}/bin/yb-admin
+      --master_addresses {{ _yugabyte_master_addresses }}
+      list_all_tablet_servers
+  become: true
+  become_user: yugabyte
+  register: _tserver_status
+  changed_when: false
+  retries: "{{ yugabyte_health_check_retries }}"
+  delay: "{{ yugabyte_health_check_delay }}"
+  until: _tserver_status.rc == 0
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Display tserver status
+  ansible.builtin.debug:
+    msg: "{{ _tserver_status.stdout_lines }}"
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Verify expected number of tservers are registered
+  ansible.builtin.assert:
+    that:
+      - groups['yugabyte_tservers'] | length | string in _tserver_status.stdout
+    fail_msg: >
+      Expected {{ groups['yugabyte_tservers'] | length }} tservers but
+      cluster status does not confirm all are registered.
+    success_msg: "All {{ groups['yugabyte_tservers'] | length }} tservers registered."
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+
+- name: Run YSQL healthcheck
+  ansible.builtin.command:
+    cmd: >
+      {{ _yugabyte_symlink }}/bin/ysqlsh
+      -h {{ hostvars[groups['yugabyte_tservers'][0]].ansible_default_ipv4.address }}
+      -p {{ yugabyte_ysql_port }}
+      -c "SELECT version();"
+  become: true
+  become_user: yugabyte
+  register: _ysql_health
+  changed_when: false
+  retries: 5
+  delay: 10
+  until: _ysql_health.rc == 0
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+  when: yugabyte_run_ysql_healthcheck and yugabyte_enable_ysql
+
+- name: Display YSQL version
+  ansible.builtin.debug:
+    msg: "{{ _ysql_health.stdout_lines }}"
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true
+  when: yugabyte_run_ysql_healthcheck and yugabyte_enable_ysql
+
+- name: Cluster deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "═══════════════════════════════════════════════════"
+      - " YugabyteDB cluster deployment SUCCESS"
+      - "═══════════════════════════════════════════════════"
+      - " Replication factor : {{ yugabyte_replication_factor }}"
+      - " Masters            : {{ groups['yugabyte_masters'] | join(', ') }}"
+      - " TServers           : {{ groups['yugabyte_tservers'] | join(', ') }}"
+      - " YSQL port          : {{ yugabyte_ysql_port }}"
+      - " YCQL port          : {{ yugabyte_ycql_port }}"
+      - " Master UI          : http://{{ groups['yugabyte_masters'][0] }}:{{ yugabyte_master_http_port }}"
+      - " TServer UI         : http://{{ groups['yugabyte_tservers'][0] }}:{{ yugabyte_tserver_http_port }}"
+      - "═══════════════════════════════════════════════════"
+  delegate_to: "{{ groups['yugabyte_masters'][0] }}"
+  run_once: true

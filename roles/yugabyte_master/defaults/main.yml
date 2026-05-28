@@ -1,0 +1,8 @@
+---
+# Wait up to 5 minutes for masters to come up
+yugabyte_master_start_timeout: 300
+yugabyte_master_start_delay: 10
+
+# Whether to initialise the cluster (only runs once – guarded by a flag file)
+yugabyte_initialize_cluster: true
+yugabyte_cluster_init_flag: /etc/yugabyte/.cluster_initialized

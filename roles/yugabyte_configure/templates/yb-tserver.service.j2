@@ -1,0 +1,23 @@
+# Managed by Ansible – yugabyte.db collection
+[Unit]
+Description=YugabyteDB TServer
+Documentation=https://docs.yugabyte.com
+After=network-online.target yb-master.service
+Wants=network-online.target
+
+[Service]
+User=yugabyte
+Group=yugabyte
+Type=simple
+WorkingDirectory={{ _yugabyte_symlink }}
+ExecStart={{ _yugabyte_symlink }}/bin/yb-tserver \
+    --flagfile=/etc/yugabyte/yb-tserver.conf
+Restart=on-failure
+RestartSec=5
+LimitNOFILE={{ yugabyte_ulimit_nofile | default(1048576) }}
+LimitNPROC={{ yugabyte_ulimit_nproc | default(12000) }}
+StandardOutput=append:{{ yugabyte_tserver_log_dir }}/yb-tserver.log
+StandardError=append:{{ yugabyte_tserver_log_dir }}/yb-tserver.err
+
+[Install]
+WantedBy=multi-user.target

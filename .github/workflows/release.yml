@@ -1,0 +1,52 @@
+---
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    name: Create GitHub Release & publish to Galaxy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible-core
+        run: pip install ansible-core
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Update galaxy.yml version
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" \
+            yugabyte/db/galaxy.yml
+
+      - name: Build collection
+        working-directory: yugabyte/db
+        run: ansible-galaxy collection build --output-path /tmp/build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/build/yugabyte-db-*.tar.gz
+          generate_release_notes: true
+
+      - name: Publish to Ansible Galaxy
+        working-directory: yugabyte/db
+        env:
+          ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
+        run: |
+          ansible-galaxy collection publish \
+            /tmp/build/yugabyte-db-*.tar.gz \
+            --api-key "$ANSIBLE_GALAXY_TOKEN"

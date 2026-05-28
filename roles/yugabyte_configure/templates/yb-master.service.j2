@@ -1,0 +1,23 @@
+# Managed by Ansible – yugabyte.db collection
+[Unit]
+Description=YugabyteDB Master
+Documentation=https://docs.yugabyte.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=yugabyte
+Group=yugabyte
+Type=simple
+WorkingDirectory={{ _yugabyte_symlink }}
+ExecStart={{ _yugabyte_symlink }}/bin/yb-master \
+    --flagfile=/etc/yugabyte/yb-master.conf
+Restart=on-failure
+RestartSec=5
+LimitNOFILE={{ yugabyte_ulimit_nofile | default(1048576) }}
+LimitNPROC={{ yugabyte_ulimit_nproc | default(12000) }}
+StandardOutput=append:{{ yugabyte_master_log_dir }}/yb-master.log
+StandardError=append:{{ yugabyte_master_log_dir }}/yb-master.err
+
+[Install]
+WantedBy=multi-user.target

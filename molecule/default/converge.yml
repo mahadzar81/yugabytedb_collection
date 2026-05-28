@@ -1,0 +1,16 @@
+---
+- name: Converge – preflight and install (no live binaries in unit tests)
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+  roles:
+    - role: yugabyte.db.yugabyte_preflight

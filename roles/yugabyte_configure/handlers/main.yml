@@ -1,0 +1,16 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart yb-master
+  ansible.builtin.service:
+    name: yb-master
+    state: restarted
+  listen: Restart yb-master
+
+- name: Restart yb-tserver
+  ansible.builtin.service:
+    name: yb-tserver
+    state: restarted
+  listen: Restart yb-tserver

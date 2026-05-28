@@ -1,0 +1,112 @@
+---
+# Prepare: install binary stubs so service/port tasks pass without
+# downloading real YugabyteDB binaries in CI.
+
+- name: Prepare – install YugabyteDB stub binaries
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: true
+  vars:
+    _stub_symlink: /opt/yugabyte/current
+
+  tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+    - name: Create stub directory tree
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - /opt/yugabyte/yugabyte-2.20.3.0/bin
+        - /mnt/data/yugabyte/master
+        - /mnt/data/yugabyte/tserver
+        - /var/log/yugabyte/master
+        - /var/log/yugabyte/tserver
+        - /etc/yugabyte
+
+    - name: Create yugabyte group
+      ansible.builtin.group:
+        name: yugabyte
+        state: present
+
+    - name: Create yugabyte user
+      ansible.builtin.user:
+        name: yugabyte
+        group: yugabyte
+
+    - name: Deploy stub yb-master binary
+      ansible.builtin.copy:
+        dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-master
+        content: |
+          #!/bin/bash
+          # Stub yb-master – listens on port 7100 and 7000
+          while true; do nc -l 7100 &>/dev/null & nc -l 7000 &>/dev/null & sleep 60; done
+        owner: yugabyte
+        group: yugabyte
+        mode: "0755"
+
+    - name: Deploy stub yb-tserver binary
+      ansible.builtin.copy:
+        dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-tserver
+        content: |
+          #!/bin/bash
+          # Stub yb-tserver – listens on 9100, 9000, 5433, 9042
+          while true; do
+            nc -l 9100 &>/dev/null & nc -l 9000 &>/dev/null &
+            nc -l 5433 &>/dev/null & nc -l 9042 &>/dev/null &
+            sleep 60
+          done
+        owner: yugabyte
+        group: yugabyte
+        mode: "0755"
+
+    - name: Deploy stub yb-admin binary
+      ansible.builtin.copy:
+        dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-admin
+        content: |
+          #!/bin/bash
+          # Stub yb-admin
+          case "$*" in
+            *list_all_masters*)
+              echo "Master UUID | RPC Host/Port | State | Role"
+              echo "stub-uuid-1 | 127.0.0.1:7100 | ALIVE | LEADER"
+              ;;
+            *list_all_tablet_servers*)
+              echo "Tablet Server UUID | RPC Host/Port | Heartbeat delay | Status | Reads/s | Writes/s"
+              echo "stub-ts-1 | 127.0.0.1:9100 | 0.5s | ALIVE | 0.0 | 0.0"
+              ;;
+            *)
+              echo "OK"
+              ;;
+          esac
+          exit 0
+        owner: yugabyte
+        group: yugabyte
+        mode: "0755"
+
+    - name: Deploy stub post_install.sh
+      ansible.builtin.copy:
+        dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/post_install.sh
+        content: "#!/bin/bash\nexit 0\n"
+        owner: yugabyte
+        group: yugabyte
+        mode: "0755"
+
+    - name: Create 'current' symlink
+      ansible.builtin.file:
+        src: /opt/yugabyte/yugabyte-2.20.3.0
+        dest: "{{ _stub_symlink }}"
+        state: link
+        force: true
+
+    - name: Install netcat (for stub listener)
+      ansible.builtin.package:
+        name: "{{ 'nmap-ncat' if ansible_os_family == 'RedHat' else 'netcat-openbsd' }}"
+        state: present

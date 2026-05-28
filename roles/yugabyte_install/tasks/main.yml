@@ -1,0 +1,89 @@
+---
+- name: Create installation directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: "0755"
+  loop:
+    - "{{ yugabyte_install_dir }}"
+    - "{{ yugabyte_data_dir }}"
+    - "{{ yugabyte_log_dir }}"
+
+- name: Check if YugabyteDB version already installed
+  ansible.builtin.stat:
+    path: "{{ _yugabyte_extract_dir }}/bin/yb-master"
+  register: _yb_binary
+
+- name: Download YugabyteDB tarball
+  ansible.builtin.get_url:
+    url: "{{ _yugabyte_download_url }}"
+    dest: "/tmp/{{ _yugabyte_tarball }}"
+    mode: "0644"
+    owner: root
+    group: root
+    timeout: 600
+  when: not _yb_binary.stat.exists
+  register: _download_result
+
+- name: Extract YugabyteDB tarball
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ _yugabyte_tarball }}"
+    dest: "{{ yugabyte_install_dir }}"
+    remote_src: true
+    owner: yugabyte
+    group: yugabyte
+    creates: "{{ _yugabyte_extract_dir }}"
+  when: not _yb_binary.stat.exists
+
+- name: Run post_install.sh script
+  ansible.builtin.command:
+    cmd: ./bin/post_install.sh
+    chdir: "{{ _yugabyte_extract_dir }}"
+  become: true
+  become_user: yugabyte
+  changed_when: true
+  when: not _yb_binary.stat.exists
+
+- name: Create 'current' symlink
+  ansible.builtin.file:
+    src: "{{ _yugabyte_extract_dir }}"
+    dest: "{{ _yugabyte_symlink }}"
+    state: link
+    owner: yugabyte
+    group: yugabyte
+    force: true
+
+- name: Ensure data/conf subdirectories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: "0750"
+  loop:
+    - "{{ yugabyte_data_dir }}/master"
+    - "{{ yugabyte_data_dir }}/tserver"
+    - "{{ yugabyte_log_dir }}/master"
+    - "{{ yugabyte_log_dir }}/tserver"
+    - "/etc/yugabyte"
+
+- name: Add yugabyte bin to system PATH
+  ansible.builtin.copy:
+    dest: /etc/profile.d/yugabyte.sh
+    content: |
+      export YUGABYTE_HOME={{ _yugabyte_symlink }}
+      export PATH=$YUGABYTE_HOME/bin:$PATH
+    mode: "0644"
+    owner: root
+    group: root
+
+- name: Remove downloaded tarball
+  ansible.builtin.file:
+    path: "/tmp/{{ _yugabyte_tarball }}"
+    state: absent
+  when:
+    - not yugabyte_keep_tarball
+    - _download_result is defined
+    - _download_result.changed

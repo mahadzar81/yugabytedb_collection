@@ -1,0 +1,116 @@
+---
+# ── Build master addresses list ──────────────────────────────────────────────
+- name: Build master RPC addresses
+  ansible.builtin.set_fact:
+    _yugabyte_master_addresses: >-
+      {{ groups['yugabyte_masters'] |
+         map('extract', hostvars, ['ansible_default_ipv4', 'address']) |
+         map('regex_replace', '$', ':' ~ yugabyte_master_rpc_port) |
+         join(',') }}
+
+# ── TLS certificates ─────────────────────────────────────────────────────────
+- name: Create cert directory
+  ansible.builtin.file:
+    path: "{{ yugabyte_cert_dir }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: "0750"
+  when: yugabyte_enable_tls
+
+- name: Deploy CA certificate
+  ansible.builtin.copy:
+    src: "{{ yugabyte_ca_cert }}"
+    dest: "{{ yugabyte_cert_dir }}/ca.crt"
+    owner: yugabyte
+    group: yugabyte
+    mode: "0640"
+  when:
+    - yugabyte_enable_tls
+    - yugabyte_ca_cert | length > 0
+  notify:
+    - Restart yb-master
+    - Restart yb-tserver
+
+- name: Deploy node certificate
+  ansible.builtin.copy:
+    src: "{{ yugabyte_node_cert }}"
+    dest: "{{ yugabyte_cert_dir }}/node.crt"
+    owner: yugabyte
+    group: yugabyte
+    mode: "0640"
+  when:
+    - yugabyte_enable_tls
+    - yugabyte_node_cert | length > 0
+  notify:
+    - Restart yb-master
+    - Restart yb-tserver
+
+- name: Deploy node key
+  ansible.builtin.copy:
+    src: "{{ yugabyte_node_key }}"
+    dest: "{{ yugabyte_cert_dir }}/node.key"
+    owner: yugabyte
+    group: yugabyte
+    mode: "0600"
+  when:
+    - yugabyte_enable_tls
+    - yugabyte_node_key | length > 0
+  notify:
+    - Restart yb-master
+    - Restart yb-tserver
+
+# ── Master configuration file ────────────────────────────────────────────────
+- name: Render yb-master configuration
+  ansible.builtin.template:
+    src: yb-master.conf.j2
+    dest: /etc/yugabyte/yb-master.conf
+    owner: yugabyte
+    group: yugabyte
+    mode: "0640"
+  notify: Restart yb-master
+
+# ── TServer configuration file ───────────────────────────────────────────────
+- name: Render yb-tserver configuration
+  ansible.builtin.template:
+    src: yb-tserver.conf.j2
+    dest: /etc/yugabyte/yb-tserver.conf
+    owner: yugabyte
+    group: yugabyte
+    mode: "0640"
+  notify: Restart yb-tserver
+
+# ── Systemd unit files ───────────────────────────────────────────────────────
+- name: Deploy yb-master systemd unit
+  ansible.builtin.template:
+    src: yb-master.service.j2
+    dest: /etc/systemd/system/yb-master.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart yb-master
+  when: yugabyte_create_systemd_units | default(true)
+
+- name: Deploy yb-tserver systemd unit
+  ansible.builtin.template:
+    src: yb-tserver.service.j2
+    dest: /etc/systemd/system/yb-tserver.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart yb-tserver
+  when: yugabyte_create_systemd_units | default(true)
+
+# ── Backup directory ─────────────────────────────────────────────────────────
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ yugabyte_backup_dir }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: "0750"
+  when: yugabyte_enable_backup

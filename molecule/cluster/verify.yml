@@ -1,0 +1,68 @@
+---
+- name: Verify – cluster configuration and file layout
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Verify yugabyte user exists
+      ansible.builtin.command: id yugabyte
+      changed_when: false
+
+    - name: Verify install directories exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: _dirs
+      loop:
+        - /opt/yugabyte/current
+        - /mnt/data/yugabyte/master
+        - /mnt/data/yugabyte/tserver
+        - /var/log/yugabyte/master
+        - /var/log/yugabyte/tserver
+        - /etc/yugabyte
+
+    - name: Assert all directories present
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Missing directory: {{ item.item }}"
+      loop: "{{ _dirs.results }}"
+
+    - name: Verify config files rendered
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: _configs
+      loop:
+        - /etc/yugabyte/yb-master.conf
+        - /etc/yugabyte/yb-tserver.conf
+
+    - name: Assert config files present
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Missing config: {{ item.item }}"
+      loop: "{{ _configs.results }}"
+
+    - name: Verify systemd unit files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: _units
+      loop:
+        - /etc/systemd/system/yb-master.service
+        - /etc/systemd/system/yb-tserver.service
+
+    - name: Assert systemd units present
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Missing systemd unit: {{ item.item }}"
+      loop: "{{ _units.results }}"
+
+    - name: Verify master_addresses in tserver config
+      ansible.builtin.command:
+        cmd: grep "tserver_master_addrs" /etc/yugabyte/yb-tserver.conf
+      changed_when: false
+      register: _tserver_conf
+
+    - name: Assert master addresses populated
+      ansible.builtin.assert:
+        that:
+          - _tserver_conf.rc == 0
+          - _tserver_conf.stdout | length > 0

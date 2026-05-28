@@ -1,0 +1,19 @@
+---
+# YugabyteDB version to install
+yugabyte_version: "2.20.3.0"
+yugabyte_build: "b68"
+
+# Installation directories
+yugabyte_install_dir: /opt/yugabyte
+yugabyte_data_dir: /mnt/data/yugabyte
+yugabyte_log_dir: /var/log/yugabyte
+
+# Download settings
+yugabyte_download_base_url: "https://downloads.yugabyte.com/releases"
+yugabyte_checksum_verify: true
+
+# Whether to keep the downloaded tarball
+yugabyte_keep_tarball: false
+
+# Whether to create systemd unit files
+yugabyte_create_systemd_units: true

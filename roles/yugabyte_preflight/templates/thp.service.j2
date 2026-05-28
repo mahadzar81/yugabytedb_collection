@@ -1,0 +1,14 @@
+# Managed by Ansible – yugabyte.db collection
+[Unit]
+Description=Disable Transparent Huge Pages (THP)
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+Before=basic.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo {{ yugabyte_transparent_hugepages }} > /sys/kernel/mm/transparent_hugepage/enabled && echo {{ yugabyte_transparent_hugepages }} > /sys/kernel/mm/transparent_hugepage/defrag'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=basic.target

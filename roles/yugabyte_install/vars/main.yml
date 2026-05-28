@@ -1,0 +1,6 @@
+---
+_yugabyte_tarball: "yugabyte-{{ yugabyte_version }}-{{ yugabyte_build }}-linux-x86_64.tar.gz"
+_yugabyte_download_url: >-
+  {{ yugabyte_download_base_url }}/{{ yugabyte_version }}/{{ _yugabyte_tarball }}
+_yugabyte_extract_dir: "{{ yugabyte_install_dir }}/yugabyte-{{ yugabyte_version }}"
+_yugabyte_symlink: "{{ yugabyte_install_dir }}/current"

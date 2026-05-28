@@ -1,0 +1,7 @@
+---
+# Post-deploy health check settings
+yugabyte_health_check_retries: 10
+yugabyte_health_check_delay: 15
+
+# Whether to run post-install YSQL healthcheck query
+yugabyte_run_ysql_healthcheck: true

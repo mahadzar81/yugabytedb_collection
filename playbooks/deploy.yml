@@ -1,0 +1,61 @@
+---
+# yugabyte.db – deploy.yml
+# Deploys a full YugabyteDB cluster.
+#
+# Required inventory groups:
+#   yugabyte_masters  – nodes running yb-master
+#   yugabyte_tservers – nodes running yb-tserver
+#   yugabyte_nodes    – union of the above (for shared tasks)
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml yugabyte/db/playbooks/deploy.yml
+
+- name: Pre-flight checks and OS preparation
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_preflight
+
+- name: Install YugabyteDB binaries
+  hosts: yugabyte_nodes
+  become: true
+  gather_facts: false
+  roles:
+    - role: yugabyte.db.yugabyte_install
+
+- name: Configure YugabyteDB (master nodes)
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_configure
+
+- name: Configure YugabyteDB (tserver nodes)
+  hosts: yugabyte_tservers
+  become: true
+  gather_facts: true
+  roles:
+    - role: yugabyte.db.yugabyte_configure
+
+- name: Start YugabyteDB masters
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: false
+  serial: 1                        # start masters one at a time
+  roles:
+    - role: yugabyte.db.yugabyte_master
+
+- name: Start YugabyteDB tservers
+  hosts: yugabyte_tservers
+  become: true
+  gather_facts: false
+  roles:
+    - role: yugabyte.db.yugabyte_tserver
+
+- name: Validate cluster health
+  hosts: yugabyte_masters
+  become: true
+  gather_facts: false
+  roles:
+    - role: yugabyte.db.yugabyte_cluster
