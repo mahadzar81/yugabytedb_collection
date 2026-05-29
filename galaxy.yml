@@ -16,8 +16,8 @@ tags:
   - database
   - distributed
   - cluster
-repository: https://github.com/yugabyte/ansible-collection-yugabytedb
+repository: https://github.com/mahadzar81/yugabytedb_collection
 documentation: https://docs.yugabyte.com
 homepage: https://www.yugabyte.com
-issues: https://github.com/yugabyte/ansible-collection-yugabytedb/issues
+issues: https://github.com/mahadzar81/yugabytedb_collection/issues
 dependencies: {}
