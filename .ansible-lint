@@ -11,4 +11,8 @@ warn_list:
 skip_list:
   - role-name                # we use underscores intentionally
   - galaxy[no-runtime]
-  - var-naming[no-role-prefix] 
+  - var-naming[no-role-prefix]
+  - experimental  # all rules tagged as experimental
+  - ignore-errors  # Use failed_when and specify error conditions instead of using ignore_errors
+  - risky-shell-pipe  # Shells that use pipes should set the pipefail option
+  - yaml  # Violations reported by yamllint
