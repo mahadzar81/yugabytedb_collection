@@ -104,11 +104,11 @@ jobs:
             ansible-lint
 
       - name: Install Ansible collection dependencies
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Molecule default scenario
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         env:
           MOLECULE_IMAGE: ${{ matrix.image }}
         run: |
@@ -144,11 +144,11 @@ jobs:
             ansible-lint
 
       - name: Install Ansible collection dependencies
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run Molecule cluster scenario
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         run: molecule test --scenario-name cluster
         timeout-minutes: 45
 
@@ -176,11 +176,11 @@ jobs:
         run: pip install ansible-core
 
       - name: Build collection
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         run: ansible-galaxy collection build --output-path /tmp/build
 
       - name: Publish collection
-        working-directory: yugabytedb_collection
+        #working-directory: yugabytedb_collection
         env:
           ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
         run: |
