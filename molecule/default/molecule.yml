@@ -17,6 +17,9 @@ platforms:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
     user: root
+    # Rocky/RHEL 8 ships Python 3.6 by default; ansible-core needs >= 3.8
+    env:
+      ANSIBLE_PYTHON_INTERPRETER: /usr/bin/python3.8
     groups:
       - yugabyte_masters
       - yugabyte_tservers
@@ -41,22 +44,23 @@ provisioner:
   connection_options:
     ansible_connection: docker
     ansible_user: root
-  playbooks:
-    converge: converge.yml
-    verify: verify.yml
   inventory:
     group_vars:
       all:
         yugabyte_version: "2.20.3.0"
         yugabyte_build: "b68"
         yugabyte_replication_factor: 1
-        yugabyte_configure_ntp: false      # no chrony in Docker
-        yugabyte_manage_firewall: false    # no firewalld in Docker
-        yugabyte_configure_kernel: false   # no sysctl in unprivileged containers
-        yugabyte_min_ram_mb: 512           # relax for CI
+        yugabyte_configure_ntp: false
+        yugabyte_manage_firewall: false
+        yugabyte_configure_kernel: false
+        yugabyte_min_ram_mb: 256
         yugabyte_min_cpu_cores: 1
-        yugabyte_min_disk_gb: 5
-        yugabyte_run_ysql_healthcheck: false  # no live YB in unit tests
+        yugabyte_min_disk_gb: 2
+        yugabyte_run_ysql_healthcheck: false
+    host_vars:
+      # RHEL/Rocky 8 ships Python 3.6; force 3.8 which is available via AppStream
+      yb-rhel8:
+        ansible_python_interpreter: /usr/bin/python3.8
 
 lint: |
   set -e

@@ -1,13 +1,23 @@
 ---
-# Prepare: install binary stubs so service/port tasks pass without
-# downloading real YugabyteDB binaries in CI.
+# Bootstrap Python 3.8 on RHEL/Rocky 8 before any module runs.
+- name: Bootstrap Python on RHEL 8
+  hosts: yugabyte_nodes
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Install python38 on Rocky/RHEL 8
+      ansible.builtin.raw: |
+        if grep -qi "release 8" /etc/redhat-release 2>/dev/null; then
+          dnf install -y python38 && \
+          alternatives --set python3 /usr/bin/python3.8
+        fi
+      changed_when: false
 
 - name: Prepare – install YugabyteDB stub binaries
   hosts: yugabyte_nodes
-  #become: true
+  become: false   # already root
   gather_facts: true
-  vars:
-    _stub_symlink: /opt/yugabyte/current
 
   tasks:
     - name: Update apt cache (Debian/Ubuntu)
@@ -46,8 +56,7 @@
         dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-master
         content: |
           #!/bin/bash
-          # Stub yb-master – listens on port 7100 and 7000
-          while true; do nc -l 7100 &>/dev/null & nc -l 7000 &>/dev/null & sleep 60; done
+          while true; do sleep 60; done
         owner: yugabyte
         group: yugabyte
         mode: "0755"
@@ -57,12 +66,7 @@
         dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-tserver
         content: |
           #!/bin/bash
-          # Stub yb-tserver – listens on 9100, 9000, 5433, 9042
-          while true; do
-            nc -l 9100 &>/dev/null & nc -l 9000 &>/dev/null &
-            nc -l 5433 &>/dev/null & nc -l 9042 &>/dev/null &
-            sleep 60
-          done
+          while true; do sleep 60; done
         owner: yugabyte
         group: yugabyte
         mode: "0755"
@@ -72,15 +76,14 @@
         dest: /opt/yugabyte/yugabyte-2.20.3.0/bin/yb-admin
         content: |
           #!/bin/bash
-          # Stub yb-admin
           case "$*" in
             *list_all_masters*)
               echo "Master UUID | RPC Host/Port | State | Role"
               echo "stub-uuid-1 | 127.0.0.1:7100 | ALIVE | LEADER"
               ;;
             *list_all_tablet_servers*)
-              echo "Tablet Server UUID | RPC Host/Port | Heartbeat delay | Status | Reads/s | Writes/s"
-              echo "stub-ts-1 | 127.0.0.1:9100 | 0.5s | ALIVE | 0.0 | 0.0"
+              echo "Tablet Server UUID | RPC Host/Port | Status"
+              echo "stub-ts-1 | 127.0.0.1:9100 | ALIVE"
               ;;
             *)
               echo "OK"
@@ -102,11 +105,11 @@
     - name: Create 'current' symlink
       ansible.builtin.file:
         src: /opt/yugabyte/yugabyte-2.20.3.0
-        dest: "{{ _stub_symlink }}"
+        dest: /opt/yugabyte/current
         state: link
         force: true
 
-    - name: Install netcat (for stub listener)
+    - name: Install netcat (for port checks in CI)
       ansible.builtin.package:
         name: "{{ 'nmap-ncat' if ansible_os_family == 'RedHat' else 'netcat-openbsd' }}"
         state: present
