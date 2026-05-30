@@ -1,7 +1,7 @@
 ---
 - name: Converge – preflight and install (no live binaries in unit tests)
   hosts: all
-  become: true
+  #become: true
   gather_facts: true
 
   pre_tasks:

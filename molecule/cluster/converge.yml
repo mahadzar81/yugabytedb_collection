@@ -1,7 +1,7 @@
 ---
 - name: Converge – full cluster deployment (stub binaries)
   hosts: yugabyte_nodes
-  become: true
+  #become: true
   gather_facts: true
 
   pre_tasks:

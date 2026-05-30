@@ -4,7 +4,7 @@
 
 - name: Prepare – install YugabyteDB stub binaries
   hosts: yugabyte_nodes
-  become: true
+  #become: true
   gather_facts: true
   vars:
     _stub_symlink: /opt/yugabyte/current

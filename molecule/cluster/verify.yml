@@ -1,7 +1,7 @@
 ---
 - name: Verify – cluster configuration and file layout
   hosts: yugabyte_nodes
-  become: true
+  #become: true
   gather_facts: false
 
   tasks:

@@ -1,7 +1,7 @@
 ---
 - name: Verify – preflight role outcomes
   hosts: all
-  become: true
+  #become: true
   gather_facts: true
 
   tasks:
