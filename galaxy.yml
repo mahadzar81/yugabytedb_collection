@@ -1,7 +1,7 @@
 ---
 namespace: mahadzar81
 name: yugabytedb_collection
-version: 1.0.1
+version: 1.0.2
 readme: README.md
 authors:
   - mahadzar.karsof@gmail.com

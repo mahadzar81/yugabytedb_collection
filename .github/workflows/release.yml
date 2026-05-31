@@ -33,20 +33,20 @@ jobs:
             yugabyte/db/galaxy.yml
 
       - name: Build collection
-        working-directory: yugabyte/db
+        #working-directory: yugabyte/db
         run: ansible-galaxy collection build --output-path /tmp/build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/build/yugabyte-db-*.tar.gz
+          files: /tmp/build/yugabytedb_collection-*.tar.gz
           generate_release_notes: true
 
       - name: Publish to Ansible Galaxy
-        working-directory: yugabyte/db
+        #working-directory: yugabyte/db
         env:
           ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
         run: |
           ansible-galaxy collection publish \
-            /tmp/build/yugabyte-db-*.tar.gz \
+            /tmp/build/yugabytedb_collection-*.tar.gz \
             --api-key "$ANSIBLE_GALAXY_TOKEN"
