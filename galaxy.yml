@@ -1,10 +1,10 @@
 ---
-namespace: yugabyte
-name: db
+namespace: mahadzar81
+name: yugabytedb_collection
 version: 1.0.0
 readme: README.md
 authors:
-  - YugabyteDB Ansible Collection Contributors
+- mahadzar.karsof@gmail.com
 description: >
   Ansible collection to deploy and manage YugabyteDB clusters on
   RHEL 8/9/10, Debian 11/12/13, and Ubuntu 22.04/24.04.
