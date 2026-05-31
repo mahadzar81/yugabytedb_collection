@@ -76,7 +76,6 @@
       - policycoreutils-python-utils
       - iproute
       - net-tools
-      - curl
       - tar
       - which
     state: present
