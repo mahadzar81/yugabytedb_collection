@@ -91,7 +91,6 @@
       - net-tools
       - curl
       - tar
-      - which
       - libssl-dev
     state: present
     update_cache: true
