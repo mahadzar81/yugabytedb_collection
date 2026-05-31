@@ -5,11 +5,11 @@
   gather_facts: false
 
   tasks:
-    - name: Install python38 on Rocky/RHEL 8
+    - name: Install python39 on Rocky/RHEL 8
       ansible.builtin.raw: |
         if grep -qi "release 8" /etc/redhat-release 2>/dev/null; then
-          dnf install -y python38 && \
-          alternatives --set python3 /usr/bin/python3.8
+          dnf install -y python39 && \
+          alternatives --set python3 /usr/bin/python3.9
         fi
       changed_when: false
 
