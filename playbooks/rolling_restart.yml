@@ -1,5 +1,5 @@
 ---
-# yugabyte.db – rolling_restart.yml
+# yugabytedb_collection – rolling_restart.yml
 # Performs a rolling restart of masters then tservers.
 #
 # Usage:

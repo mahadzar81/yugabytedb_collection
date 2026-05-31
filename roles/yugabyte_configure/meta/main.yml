@@ -14,4 +14,4 @@ galaxy_info:
     - name: Ubuntu
       versions: ["jammy", "noble"]
 dependencies:
-  - role: yugabyte.db.yugabyte_install
+  - role: yugabytedb_collection.yugabyte_install

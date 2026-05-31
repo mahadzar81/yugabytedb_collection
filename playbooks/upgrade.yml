@@ -1,5 +1,5 @@
 ---
-# yugabyte.db – upgrade.yml
+# yugabytedb_collection – upgrade.yml
 # Upgrades an existing YugabyteDB cluster to a new version.
 #
 # Usage:
@@ -12,21 +12,21 @@
   become: true
   gather_facts: true
   roles:
-    - role: yugabyte.db.yugabyte_install
+    - role: yugabytedb_collection.yugabyte_install
 
 - name: Update configuration files
   hosts: yugabyte_masters
   become: true
   gather_facts: true
   roles:
-    - role: yugabyte.db.yugabyte_configure
+    - role: yugabytedb_collection.yugabyte_configure
 
 - name: Update tserver configuration files
   hosts: yugabyte_tservers
   become: true
   gather_facts: true
   roles:
-    - role: yugabyte.db.yugabyte_configure
+    - role: yugabytedb_collection.yugabyte_configure
 
 - name: Rolling restart masters to pick up new version
   hosts: yugabyte_masters
@@ -75,4 +75,4 @@
   become: true
   gather_facts: false
   roles:
-    - role: yugabyte.db.yugabyte_cluster
+    - role: yugabytedb_collection.yugabyte_cluster

@@ -1,4 +1,4 @@
-# yugabyte.db – Ansible Collection
+# yugabytedb_collection – Ansible Collection
 
 [![CI](https://github.com/yugabyte/ansible-collection-yugabytedb/actions/workflows/ci.yml/badge.svg)](https://github.com/yugabyte/ansible-collection-yugabytedb/actions/workflows/ci.yml)
 [![Ansible Galaxy](https://img.shields.io/badge/galaxy-yugabyte.db-blue.svg)](https://galaxy.ansible.com/yugabyte/db)
@@ -63,14 +63,14 @@ An Ansible collection for deploying, configuring, and managing **YugabyteDB** cl
 ### Install the collection
 
 ```bash
-ansible-galaxy collection install yugabyte.db
+ansible-galaxy collection install yugabytedb_collection
 ```
 
 Or pin a version in your `requirements.yml`:
 
 ```yaml
 collections:
-  - name: yugabyte.db
+  - name: yugabytedb_collection
     version: ">=1.0.0"
 ```
 

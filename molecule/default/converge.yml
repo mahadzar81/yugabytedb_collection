@@ -27,4 +27,4 @@
       changed_when: false
 
   roles:
-    - role: yugabyte.db.yugabyte_preflight
+    - role: yugabytedb_collection.yugabyte_preflight
