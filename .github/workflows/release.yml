@@ -30,7 +30,7 @@ jobs:
       - name: Update galaxy.yml version
         run: |
           sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" \
-            yugabyte/db/galaxy.yml
+            mahadzar81.yugabytedb_collection/galaxy.yml
 
       - name: Build collection
         #working-directory: yugabyte/db
