@@ -45,7 +45,6 @@ jobs:
         env:
           ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
         run: |
-          # FIXED: Added the 'mahadzar81-' namespace prefix
           ansible-galaxy collection publish \
             /tmp/build/mahadzar81-yugabytedb_collection-*.tar.gz \
             --api-key "$ANSIBLE_GALAXY_TOKEN"
