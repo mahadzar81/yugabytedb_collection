@@ -33,7 +33,7 @@ jobs:
             galaxy.yml
 
       - name: Build collection
-        run: ansible-galaxy collection build mahadzar81.yugabytedb_collection --output-path /tmp/build
+        run: ansible-galaxy collection build . --output-path /tmp/build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
